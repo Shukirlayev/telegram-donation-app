@@ -4,6 +4,7 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { Telegraf, Markup } from "telegraf";
 import { createServer as createViteServer } from "vite";
+import cron from "node-cron";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -99,10 +100,15 @@ if (BOT_TOKEN) {
         note: text,
         createdAt: new Date().toISOString(),
       });
-      return ctx.reply(
-        `✅ ${amount.toLocaleString()} UZS "${matchedGoal.title}" maqsadiga qo'shildi!\n\n` +
-        `Jami yig'ildi: ${matchedGoal.currentAmount.toLocaleString()} / ${matchedGoal.targetAmount ? matchedGoal.targetAmount.toLocaleString() : 'N/A'} UZS`
-      );
+
+      let message = `✅ ${amount.toLocaleString()} UZS "${matchedGoal.title}" maqsadiga qo'shildi!\n\n` +
+        `Jami yig'ildi: ${matchedGoal.currentAmount.toLocaleString()} / ${matchedGoal.targetAmount ? matchedGoal.targetAmount.toLocaleString() : 'N/A'} UZS`;
+      
+      if (matchedGoal.currentAmount >= matchedGoal.targetAmount) {
+        message += `\n\n🎉 Tabriklaymiz! Siz "${matchedGoal.title}" uchun yetarli pul yig'dingiz!`;
+      }
+
+      return ctx.reply(message);
     }
 
     // If no direct match, show inline keyboard for selection
@@ -143,13 +149,40 @@ if (BOT_TOKEN) {
     });
 
     await ctx.answerCbQuery("✅ Saqlandi!");
-    await ctx.editMessageText(
-      `✅ ${amount.toLocaleString()} UZS "${goal.title}" maqsadiga qo'shildi!\n\n` +
-      `Jami yig'ildi: ${goal.currentAmount.toLocaleString()} / ${goal.targetAmount ? goal.targetAmount.toLocaleString() : 'N/A'} UZS`
-    );
+    
+    let message = `✅ ${amount.toLocaleString()} UZS "${goal.title}" maqsadiga qo'shildi!\n\n` +
+      `Jami yig'ildi: ${goal.currentAmount.toLocaleString()} / ${goal.targetAmount ? goal.targetAmount.toLocaleString() : 'N/A'} UZS`;
+    
+    if (goal.currentAmount >= goal.targetAmount) {
+      message += `\n\n🎉 Tabriklaymiz! Siz "${goal.title}" uchun yetarli pul yig'dingiz!`;
+    }
+
+    await ctx.editMessageText(message);
   });
 
   bot.launch().catch(console.error);
+
+  // Cron Job: If user hasn't added a transaction in 3 days, send a reminder.
+  // Run every day at 10:00 (server time)
+  cron.schedule("0 10 * * *", () => {
+    const now = new Date();
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(now.getDate() - 3);
+
+    for (const user of users) {
+      const userTxs = transactions.filter(t => t.userId === user.userId);
+      if (userTxs.length > 0) {
+        userTxs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const lastTx = userTxs[0];
+        if (new Date(lastTx.createdAt) < threeDaysAgo) {
+          bot?.telegram.sendMessage(
+            user.userId,
+            `Salom ${user.displayName}! O'z maqsadlaringiz sari pul ajratishni unutmang. Botga summani yuboring! 🎯`
+          ).catch(e => console.error("Could not send reminder:", e));
+        }
+      }
+    }
+  });
 
   // Enable graceful stop
   process.once('SIGINT', () => bot?.stop('SIGINT'));
@@ -251,7 +284,7 @@ async function startServer() {
   // 2. Main data endpoint: returns goals and recent transactions
   app.get("/api/data", authMiddleware, (req, res) => {
     const userId = (req as any).user.userId;
-    const userGoals = goals.filter(g => g.userId === userId);
+    const userGoals = goals.filter(g => g.userId === userId && !g.isArchived);
     const userTransactions = transactions.filter(t => t.userId === userId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 50); // top 50 recent transactions
@@ -286,6 +319,38 @@ async function startServer() {
 
     goals.push(newGoal);
     res.json(newGoal);
+  });
+
+  // 3a. Update Goal
+  app.put("/api/goals/:id", authMiddleware, (req, res) => {
+    const userId = (req as any).user.userId;
+    const { title, targetAmount, color } = req.body;
+    const goalId = req.params.id;
+
+    const goal = goals.find(g => g.id === goalId && g.userId === userId);
+    if (!goal) {
+      return res.status(404).json({ error: "Goal not found" });
+    }
+
+    if (title) goal.title = title;
+    if (targetAmount) goal.targetAmount = parseInt(targetAmount, 10);
+    if (color) goal.color = color;
+
+    res.json(goal);
+  });
+
+  // 3b. Delete/Archive Goal
+  app.delete("/api/goals/:id", authMiddleware, (req, res) => {
+    const userId = (req as any).user.userId;
+    const goalId = req.params.id;
+
+    const goal = goals.find(g => g.id === goalId && g.userId === userId);
+    if (!goal) {
+      return res.status(404).json({ error: "Goal not found" });
+    }
+
+    goal.isArchived = true;
+    res.json({ success: true });
   });
 
   // 4. Update Profile
