@@ -1,0 +1,6 @@
+{
+  "name": "Donation Track Bot",
+  "description": "Telegram Bot & Mini App to track and view personal donations with secure Telegram auth.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
