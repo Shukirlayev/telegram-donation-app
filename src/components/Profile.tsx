@@ -217,9 +217,9 @@ export default function Profile({ profile, token, onRefresh, transactions, goals
                 <h3 className="text-xl font-display font-semibold text-slate-800 dark:text-white text-center mb-6">{t("profile.languageModalTitle")}</h3>
                 
                 <div className="space-y-3">
-                  {['uz', 'en', 'ru'].map((l) => (
+                  {['uz', 'en', 'ru', 'qq'].map((l) => (
                     <button key={l} onClick={() => { setLang(l as any); setShowLangModal(false); }} className={`w-full p-4 rounded-2xl flex items-center justify-between transition-colors ${lang === l ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 shadow-sm' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-slate-700'}`}>
-                       <span className="font-semibold">{(translations[l as 'uz'|'en'|'ru'] as any).profile.languageNames[l]}</span>
+                       <span className="font-semibold">{(translations[l as 'uz'|'en'|'ru'|'qq'] as any).profile.languageNames[l]}</span>
                        {lang === l && <Check className="w-5 h-5 text-indigo-500" />}
                     </button>
                   ))}

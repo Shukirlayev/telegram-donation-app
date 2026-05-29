@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 
-type Language = 'uz' | 'ru' | 'en';
+type Language = 'uz' | 'ru' | 'en' | 'qq';
 
 export const translations = {
   uz: {
@@ -68,7 +68,7 @@ export const translations = {
        appVersion: "Ilova versiyasi",
        mainSettings: "ASOSIY SOZLAMALAR",
        language: "Ilova tili",
-       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English" },
+       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English", qq: "Qaraqalpaqsha" },
        languageModalTitle: "Tilni tanlang",
        currency: "Asosiy valyuta",
        currencyOnly: "Faqat UZS valyutasi qo'llab-quvvatlanadi",
@@ -151,7 +151,7 @@ export const translations = {
        appVersion: "Версия приложения",
        mainSettings: "ОСНОВНЫЕ НАСТРОЙКИ",
        language: "Язык приложения",
-       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English" },
+       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English", qq: "Qaraqalpaqsha" },
        languageModalTitle: "Выберите язык",
        currency: "Основная валюта",
        currencyOnly: "Поддерживается только валюта UZS",
@@ -234,7 +234,7 @@ export const translations = {
        appVersion: "App Version",
        mainSettings: "MAIN SETTINGS",
        language: "App Language",
-       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English" },
+       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English", qq: "Qaraqalpaqsha" },
        languageModalTitle: "Select Language",
        currency: "Main Currency",
        currencyOnly: "Only UZS currency is supported",
@@ -250,6 +250,89 @@ export const translations = {
        downloadTx: "Download Transactions",
        downloadGoals: "Download Goals",
        exit: "Exit / Close"
+    }
+  },
+  qq: {
+    greeting: {
+       morning: "Qayırlı tań",
+       day: "Qayırlı kún",
+       evening: "Qayırlı kesh",
+       night: "Qayırlı tún",
+       welcome: "Xosh keldińiz"
+    },
+    nav: {
+       home: "Bas bet",
+       stats: "Statistika",
+       profile: "Profil"
+    },
+    header: {
+       totalSaved: "Jami jıynaldı",
+       stats: "Statistika",
+       profile: "Profil sazlawları",
+       user: "Paydalanıwshı"
+    },
+    home: {
+       millionaire: "Millioner!",
+       millionSaved: "1M+ {currency} jıynaldı",
+       streak: "Kún",
+       activeStreak: "Aktiv seriya",
+       aiConsult: "Qarjy AI",
+       aiNoGoals: "Sizde ele maqsetler joq. Birinshi maqsetińizdi jaratıń!",
+       aiStart: "Jaqsı baslama! Maqset jarattıńız, endi oǵan pul ajıratıń.",
+       aiMillion: "Siz 1 Million {currency} den artıq qarjı jıynawǵa eristińiz! Ájayıp nátiyje! 🔥",
+       aiProgress: "Siz ulıwma esapta {amount} {currency} jıynadıńız. Rejeli túrde jıynawdı dawam ettirseńiz, barlıǵına tezde erisesiz.",
+       goals: "Maqsetler",
+       add: "Qosıw",
+       newCategory: "Taza Kategoriya",
+       name: "Atı",
+       namePlaceholder: "Mısalı: Noutbuk",
+       amount: "Maqset summası",
+       deadline: "Múddeti (Májbúriy emes)",
+       saving: "Saqlanbaqta...",
+       save: "Saqlaw",
+       cancel: "Biykarlaw",
+       noGoalsTitle: "Ele maqset qosılmaǵan.",
+       noGoalsDesc: "Pul jıynawdı baslaw ushın kategoriya jaratıp onı tańlań",
+       deadlineEnd: "Múddet tawsıldı",
+       daysLeft: "kún qaldı",
+       deadlinePassed: "Múddet ótti",
+       perDay: "UZS / kún",
+       recentActivity: "Sońǵı háreketler",
+       noActivity: "Háreketler joq.",
+       archived: "Arxivlengen",
+       target: "Maqset:"
+    },
+    stats: {
+       distribution: "Bólistiriw",
+       noGoals: "Házirshe maqsetler joq",
+       noFunds: "Maqsetlerge ele pul ajıratılmaǵan",
+       savings7days: "Aqırǵı 7 Kúndegi Jıynawlar",
+       saved: "Jıynaldı",
+       funds: "Qarjılar"
+    },
+    profile: {
+       settings: "Sazlawlar",
+       namePlaceholder: "Atıńız...",
+       hidden: "Jasırın",
+       appVersion: "Qosımsha versiyası",
+       mainSettings: "TIYKARǴI SAZLAWLAR",
+       language: "Qosımsha tili",
+       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English", qq: "Qaraqalpaqsha" },
+       languageModalTitle: "Tildi tańlań",
+       currency: "Tiykarǵı valyuta",
+       currencyOnly: "Tek ǵana UZS valyutası qollap-quwatlanadı",
+       notifications: "Bildiriwnamalar",
+       on: "Qosılǵan",
+       off: "Óshirilgen",
+       darkMode: "Túngi rejim",
+       auto: "Avto",
+       securityGroup: "QÁWIPSIZLIK",
+       pinCode: "PIN-kod ornatıw",
+       infoGroup: "MAǴLUMAT",
+       help: "Járdem hám qaǵıydalar",
+       downloadTx: "Tranzakciyalardı júklew",
+       downloadGoals: "Maqsetlerdi júklew",
+       exit: "Shıǵıw / Jabıw"
     }
   }
 };
