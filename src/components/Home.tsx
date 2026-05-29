@@ -2,6 +2,7 @@ import { Goal, Transaction, UserProfile } from "../types";
 import { TrendingUp, Target, Plus, CheckCircle2, X, Edit2, Check, Trash2, ChevronRight, Wallet, Award, Flame, Bot, CalendarDays } from "lucide-react";
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import confetti from "canvas-confetti";
 import { useTranslation } from "../i18n";
 import { useAppContext } from "../contexts/AppContext";
 
@@ -36,8 +37,11 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
   
   const hasMillionBadge = (totalSaved / (currency === 'UZS' ? 1 : currency === 'USD' ? 12500 : currency === 'EUR' ? 13500 : 140)) >= 1000000;
   
+  const activeGoals = useMemo(() => goals.filter(g => !g.isCompleted && g.currentAmount < g.targetAmount), [goals]);
+  const completedGoals = useMemo(() => goals.filter(g => g.isCompleted || g.currentAmount >= g.targetAmount), [goals]);
+
   const aiMessage = useMemo(() => {
-    if (goals.length === 0) return t("home.aiNoGoals");
+    if (activeGoals.length === 0 && completedGoals.length === 0) return t("home.aiNoGoals");
     if (totalSaved === 0) return t("home.aiStart");
     if (hasMillionBadge) return t("home.aiMillion", { currency: currencySymbol });
     return t("home.aiProgress", { amount: formatMoney(totalSaved), currency: currencySymbol });
@@ -87,14 +91,33 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
     } catch (err) { console.error(err); showToast("Xatolik yuz berdi", "error"); }
   };
 
+  const handleCompleteGoal = async (goalId: string) => {
+    if (!confirm("Haqiqatdan ham bu maqsadni tugatilgan deb belgilaysizmi?")) return;
+    try {
+      await fetch(`/api/goals/${goalId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ isCompleted: true })
+      });
+      confetti({
+         particleCount: 150,
+         spread: 70,
+         origin: { y: 0.6 },
+         colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+      });
+      showToast("Maqsad yakunlandi, tabriklaymiz!", "success");
+      onRefresh();
+    } catch (err) { console.error(err); showToast("Xatolik yuz berdi", "error"); }
+  };
+
   const handleDeleteGoal = async (goalId: string) => {
-    if (!confirm("Haqiqatdan ham bu maqsadni o'chirasizmi? (Tranzaksiyalar qoladi lekin arxivalangan bo'ladi)")) return;
+    if (!confirm("Haqiqatdan ham bu maqsadni o'chirasizmi? DIQQAT: unga tegishli barcha tranzaksiyalar ham o'chib ketadi!")) return;
     try {
       await fetch(`/api/goals/${goalId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      showToast("Maqsad o'chirildi", "info");
+      showToast("Maqsad to'liq o'chirildi", "info");
       onRefresh();
     } catch (err) { console.error(err); showToast("Xatolik yuz berdi", "error"); }
   };
@@ -198,7 +221,7 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
           )}
         </AnimatePresence>
 
-        {goals.length === 0 ? (
+        {activeGoals.length === 0 ? (
           <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl p-8 rounded-[1.5rem] border border-white/60 dark:border-slate-700/50 text-center shadow-sm transition-colors">
             <Target className="w-10 h-10 text-slate-400 mx-auto mb-3" />
             <p className="text-slate-700 dark:text-slate-200 font-medium text-[15px]">{t("home.noGoalsTitle")}</p>
@@ -206,7 +229,7 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
           </div>
         ) : (
           <div className="grid gap-4">
-            {goals.map((goal, index) => {
+            {activeGoals.map((goal, index) => {
               const percentRaw = (goal.currentAmount / goal.targetAmount) * 100;
               const percent = Math.min(percentRaw, 100).toFixed(1);
               const isComplete = goal.currentAmount >= goal.targetAmount;
@@ -255,6 +278,7 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                            </div>
                          </div>
                          <div className="flex items-center gap-1">
+                           <button onClick={(e) => { e.stopPropagation(); handleCompleteGoal(goal.id); }} className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all active:scale-90" title="Tugatish"><CheckCircle2 className="w-[18px] h-[18px]" /></button>
                            <button onClick={() => { 
                                setEditingGoalId(goal.id); 
                                setEditGoalTitle(goal.title); 
@@ -262,8 +286,8 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                                const rate = currency === 'UZS' ? 1 : currency === 'USD' ? 12500 : currency === 'EUR' ? 13500 : 140;
                                setEditGoalTarget((goal.targetAmount / rate).toString()); 
                                setEditGoalDeadline(goal.deadline || ""); 
-                           }} className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all active:scale-90"><Edit2 className="w-[18px] h-[18px]" /></button>
-                           <button onClick={() => handleDeleteGoal(goal.id)} className="p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all active:scale-90"><Trash2 className="w-[18px] h-[18px]" /></button>
+                           }} className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all active:scale-90" title="Tahrirlash"><Edit2 className="w-[18px] h-[18px]" /></button>
+                           <button onClick={() => handleDeleteGoal(goal.id)} className="p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all active:scale-90" title="O'chirish"><Trash2 className="w-[18px] h-[18px]" /></button>
                          </div>
                       </div>
                       
@@ -302,6 +326,40 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                 </motion.div>
               );
             })}
+          </div>
+        )}
+
+        {completedGoals.length > 0 && (
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display font-semibold text-slate-800 dark:text-white text-[19px] tracking-tight">Yakunlangan maqsadlar 🎉</h2>
+            </div>
+            <div className="grid gap-4">
+              {completedGoals.map((goal, index) => (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  key={goal.id} 
+                  className="bg-emerald-50/50 dark:bg-emerald-900/20 backdrop-blur-xl p-5 rounded-[1.5rem] shadow-sm border border-emerald-100 dark:border-emerald-800/30 relative overflow-hidden"
+                >
+                  <div className="flex justify-between items-center relative z-10 w-full">
+                     <div className="flex items-center gap-3">
+                       <div className="w-[42px] h-[42px] rounded-[14px] flex items-center justify-center shrink-0 bg-emerald-100/80 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                          <CheckCircle2 className="w-[22px] h-[22px]" />
+                       </div>
+                       <div className="min-w-0 pr-2">
+                         <h3 className="font-display font-semibold text-slate-800 dark:text-white text-[17px] leading-tight truncate">
+                           {goal.title}
+                         </h3>
+                         <p className="text-[12px] font-medium text-emerald-600 dark:text-emerald-400 mt-0.5 truncate tracking-wide">Yig'ilgan: {formatMoney(goal.currentAmount)} {currencySymbol}</p>
+                       </div>
+                     </div>
+                     <button onClick={() => handleDeleteGoal(goal.id)} className="p-2 text-slate-400 hover:text-rose-500 hover:bg-white/50 dark:hover:bg-slate-800 rounded-full transition-all active:scale-90" title="O'chirish"><Trash2 className="w-[18px] h-[18px]" /></button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         )}
       </section>

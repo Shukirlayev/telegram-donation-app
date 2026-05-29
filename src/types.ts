@@ -17,6 +17,7 @@ export interface Goal {
   createdAt: string;
   deadline?: string;
   isArchived?: boolean;
+  isCompleted?: boolean;
 }
 
 export interface Transaction {

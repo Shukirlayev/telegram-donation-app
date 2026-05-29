@@ -20,6 +20,7 @@ type Goal = {
   createdAt: string;
   deadline?: string;
   isArchived?: boolean;
+  isCompleted?: boolean;
 };
 
 type Transaction = {
@@ -97,10 +98,11 @@ if (BOT_TOKEN) {
     const text = ctx.message.text.trim();
     const userId = ctx.from.id;
     
-    const userGoals = goals.filter(g => g.userId === userId && !g.isArchived);
+    // Allow adding funds to goals that are NOT completed explicitly AND whose target amount is not reached fully
+    const userGoals = goals.filter(g => g.userId === userId && !g.isCompleted && g.currentAmount < g.targetAmount);
 
     if (userGoals.length === 0) {
-      return ctx.reply("Sizda hali maqsadlar yo'q! 🎯\nIltimos, avval Mini App orqali yangi maqsad (kategoriya) qo'shing.");
+      return ctx.reply("Sizda hali ochiq (tugallanmagan) maqsadlar yo'q! 🎯\nIltimos, avval Mini App orqali yangi maqsad (kategoriya) qo'shing.");
     }
 
     const userProfile = users.find(u => u.userId === userId);
@@ -160,6 +162,10 @@ if (BOT_TOKEN) {
     const goal = goals.find(g => g.id === goalId && g.userId === userId);
     if (!goal) {
       return ctx.answerCbQuery("❌ Kechirasiz, maqsad topilmadi.");
+    }
+    
+    if (goal.isCompleted || goal.currentAmount >= goal.targetAmount) {
+      return ctx.answerCbQuery("❌ Kechirasiz, bu maqsad allaqachon yakunlangan.", { show_alert: true });
     }
 
     // Process transaction
@@ -310,6 +316,7 @@ async function startServer() {
   // 2. Main data endpoint: returns goals and recent transactions
   app.get("/api/data", authMiddleware, (req, res) => {
     const userId = (req as any).user.userId;
+    // We send all goals (both active and completed) so they show up in history/stats.
     const userGoals = goals.filter(g => g.userId === userId && !g.isArchived);
     const userTransactions = transactions.filter(t => t.userId === userId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -351,7 +358,7 @@ async function startServer() {
   // 3a. Update Goal
   app.put("/api/goals/:id", authMiddleware, (req, res) => {
     const userId = (req as any).user.userId;
-    const { title, targetAmount, color, deadline } = req.body;
+    const { title, targetAmount, color, deadline, isCompleted } = req.body;
     const goalId = req.params.id;
 
     const goal = goals.find(g => g.id === goalId && g.userId === userId);
@@ -363,6 +370,7 @@ async function startServer() {
     if (targetAmount) goal.targetAmount = parseInt(targetAmount, 10);
     if (color) goal.color = color;
     if (deadline !== undefined) goal.deadline = deadline;
+    if (isCompleted !== undefined) goal.isCompleted = isCompleted;
 
     res.json(goal);
   });
@@ -372,12 +380,20 @@ async function startServer() {
     const userId = (req as any).user.userId;
     const goalId = req.params.id;
 
-    const goal = goals.find(g => g.id === goalId && g.userId === userId);
-    if (!goal) {
+    const goalIndex = goals.findIndex(g => g.id === goalId && g.userId === userId);
+    if (goalIndex === -1) {
       return res.status(404).json({ error: "Goal not found" });
     }
 
-    goal.isArchived = true;
+    goals.splice(goalIndex, 1);
+    
+    // Remove transactions for this goal
+    for (let i = transactions.length - 1; i >= 0; i--) {
+       if (transactions[i].goalId === goalId) {
+          transactions.splice(i, 1);
+       }
+    }
+    
     res.json({ success: true });
   });
 
