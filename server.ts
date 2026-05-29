@@ -6,10 +6,22 @@ import { Telegraf, Markup } from "telegraf";
 import { createServer as createViteServer } from "vite";
 import cron from "node-cron";
 import * as dotenv from "dotenv";
+import fs from "fs";
+
+import { initializeApp, applicationDefault } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 
 dotenv.config();
 
-// In-memory simple database
+const firebaseConfig = JSON.parse(fs.readFileSync('./firebase-applet-config.json', 'utf8'));
+
+// Initialize Firebase Admin
+const adminApp = initializeApp({
+  credential: applicationDefault(),
+  projectId: firebaseConfig.projectId
+});
+const db = getFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
+
 type Goal = {
   id: string;
   userId: number;
@@ -42,10 +54,6 @@ type UserProfile = {
   preferredCurrency?: string;
 };
 
-const goals: Goal[] = [];
-const transactions: Transaction[] = [];
-const users: UserProfile[] = [];
-
 // Initialize Telegraf bot
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const JWT_SECRET = process.env.JWT_SECRET || "default_unsafe_secret";
@@ -67,30 +75,42 @@ if (BOT_TOKEN) {
   bot.command('admin', async (ctx) => {
     const adminIdStr = process.env.ADMIN_TELEGRAM_ID;
     const tempPassword = "sarvar_admin";
+    
+    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
     const args = ctx.message.text.split(' ');
 
     if ((adminIdStr && ctx.from.id.toString() === adminIdStr) || args[1] === tempPassword) {
-      const activeUsers = new Set(transactions.map(t => t.userId)).size;
-      const totalUsers = users.length;
-      const totalGoals = goals.length;
-      const activeGoals = goals.filter(g => !g.isArchived).length;
-      const totalTx = transactions.length;
-      
+      const snapUsers = await db.collection('users').get();
+      const snapGoals = await db.collection('goals').get();
+      const snapTx = await db.collection('transactions').get();
+
+      const totalUsers = snapUsers.size;
+      const totalGoals = snapGoals.size;
+      let activeGoalsCount = 0;
       let totalSavingsUZS = 0;
-      goals.forEach(g => {
-         totalSavingsUZS += g.currentAmount;
+      snapGoals.forEach(doc => {
+        const g = doc.data() as Goal;
+        if (!g.isArchived) activeGoalsCount++;
+        totalSavingsUZS += g.currentAmount;
       });
+
+      const totalTx = snapTx.size;
+      const activeUsersSet = new Set<number>();
+      snapTx.forEach(doc => {
+        activeUsersSet.add((doc.data() as Transaction).userId);
+      });
+      const activeUsers = activeUsersSet.size;
 
       const msg = `📊 *Admin Panel (Statistika)*\n\n` +
         `👥 Jami foydalanuvchilar: ${totalUsers} ta\n` +
         `🔥 Pul yig'ayotganlar (Aktiv): ${activeUsers} ta\n` +
-        `🎯 Jami maqsadlar: ${totalGoals} ta (${activeGoals} ta aktiv)\n` +
+        `🎯 Jami maqsadlar: ${totalGoals} ta (${activeGoalsCount} ta aktiv)\n` +
         `💳 Jami tranzaksiyalar: ${totalTx} ta\n` +
         `💰 Barcha yig'ilgan mablag': ${totalSavingsUZS.toLocaleString()} UZS`;
 
       return ctx.reply(msg, { parse_mode: "Markdown" });
     } else {
-      return; // Do nothing for unauthorized users to keep it hidden
+      return; 
     }
   });
 
@@ -98,14 +118,17 @@ if (BOT_TOKEN) {
     const text = ctx.message.text.trim();
     const userId = ctx.from.id;
     
-    // Allow adding funds to goals that are NOT completed explicitly AND whose target amount is not reached fully
-    const userGoals = goals.filter(g => g.userId === userId && !g.isCompleted && g.currentAmount < g.targetAmount);
+    const goalsSnap = await db.collection('goals').where('userId', '==', userId).get();
+    let allUserGoals = goalsSnap.docs.map(d => d.data() as Goal);
+    
+    const userGoals = allUserGoals.filter(g => !g.isCompleted && g.currentAmount < g.targetAmount && !g.isArchived);
 
     if (userGoals.length === 0) {
       return ctx.reply("Sizda hali ochiq (tugallanmagan) maqsadlar yo'q! 🎯\nIltimos, avval Mini App orqali yangi maqsad (kategoriya) qo'shing.");
     }
 
-    const userProfile = users.find(u => u.userId === userId);
+    const userProfileDoc = await db.collection('users').doc(String(userId)).get();
+    const userProfile = userProfileDoc.exists ? (userProfileDoc.data() as UserProfile) : undefined;
     const currency = userProfile?.preferredCurrency || "UZS";
     const rate = currency === 'UZS' ? 1 : currency === 'USD' ? 12500 : currency === 'EUR' ? 13500 : currency === 'RUB' ? 140 : 1;
 
@@ -118,7 +141,6 @@ if (BOT_TOKEN) {
 
     const amountMatch = text.match(/\d+/);
     if (!amountMatch) {
-       // Conversational fallback without AI
        const greetings = ["salom", "qalay", "qanaqa", "yaxshimisiz", "assalom", "hayit", "bayram"];
        const textLower = text.toLowerCase();
        const isGreeting = greetings.some(w => textLower.includes(w));
@@ -136,10 +158,19 @@ if (BOT_TOKEN) {
        const cleanNote = note.replace('uchun', '').replace('ga', '').trim();
        matchedGoal = userGoals.find(g => cleanNote.includes(g.title.toLowerCase()) || g.title.toLowerCase().includes(cleanNote));
     }
+    
     if (matchedGoal) {
        const baseAmount = amount * rate;
        matchedGoal.currentAmount += baseAmount;
-       transactions.push({ id: crypto.randomUUID(), userId, goalId: matchedGoal.id, amount: baseAmount, note: text, createdAt: new Date().toISOString() });
+       
+       const txId = crypto.randomUUID();
+       const newTx: Transaction = { id: txId, userId, goalId: matchedGoal.id, amount: baseAmount, note: text, createdAt: new Date().toISOString() };
+       
+       const batch = db.batch();
+       batch.update(db.collection('goals').doc(matchedGoal.id), { currentAmount: matchedGoal.currentAmount });
+       batch.set(db.collection('transactions').doc(txId), newTx);
+       await batch.commit();
+
        let message = `✅ ${amount.toLocaleString()} ${currency} "${matchedGoal.title}" maqsadiga qo'shildi!\n\nJami yig'ildi: ${(matchedGoal.currentAmount / rate).toLocaleString()} / ${matchedGoal.targetAmount ? (matchedGoal.targetAmount / rate).toLocaleString() : 'N/A'} ${currency}`;
        if (matchedGoal.currentAmount >= (matchedGoal.targetAmount || 0)) message += `\n\n🎉 Tabriklaymiz! Siz "${matchedGoal.title}" uchun yetarli pul yig'dingiz!`;
        return ctx.reply(message);
@@ -155,13 +186,18 @@ if (BOT_TOKEN) {
 
     if (!userId) return;
 
-    const userProfile = users.find(u => u.userId === userId);
+    const userProfileDoc = await db.collection('users').doc(String(userId)).get();
+    const userProfile = userProfileDoc.exists ? (userProfileDoc.data() as UserProfile) : undefined;
     const currency = userProfile?.preferredCurrency || "UZS";
     const rate = currency === 'UZS' ? 1 : currency === 'USD' ? 12500 : currency === 'EUR' ? 13500 : currency === 'RUB' ? 140 : 1;
 
-    const goal = goals.find(g => g.id === goalId && g.userId === userId);
-    if (!goal) {
+    const goalDoc = await db.collection('goals').doc(goalId).get();
+    if (!goalDoc.exists) {
       return ctx.answerCbQuery("❌ Kechirasiz, maqsad topilmadi.");
+    }
+    const goal = goalDoc.data() as Goal;
+    if (goal.userId !== userId) {
+      return ctx.answerCbQuery("❌ Ruxsat yo'q.");
     }
     
     if (goal.isCompleted || goal.currentAmount >= goal.targetAmount) {
@@ -171,14 +207,21 @@ if (BOT_TOKEN) {
     // Process transaction
     const baseAmount = amount * rate;
     goal.currentAmount += baseAmount;
-    transactions.push({
-      id: crypto.randomUUID(),
+    
+    const txId = crypto.randomUUID();
+    const newTx: Transaction = {
+      id: txId,
       userId,
       goalId: goal.id,
       amount: baseAmount,
       note: 'Bot orqali tanlandi',
       createdAt: new Date().toISOString(),
-    });
+    };
+
+    const batch = db.batch();
+    batch.update(db.collection('goals').doc(goalId), { currentAmount: goal.currentAmount });
+    batch.set(db.collection('transactions').doc(txId), newTx);
+    await batch.commit();
 
     await ctx.answerCbQuery("✅ Saqlandi!");
     
@@ -194,16 +237,22 @@ if (BOT_TOKEN) {
 
   bot.launch().catch(console.error);
 
-  // Cron Job: If user hasn't added a transaction in 3 days, send a reminder.
-  // Run every day at 10:00 (server time)
-  cron.schedule("0 10 * * *", () => {
+  // Cron Job
+  cron.schedule("0 10 * * *", async () => {
     const now = new Date();
     const threeDaysAgo = new Date();
     threeDaysAgo.setDate(now.getDate() - 3);
 
-    for (const user of users) {
-      const userTxs = transactions.filter(t => t.userId === user.userId);
-      if (userTxs.length > 0) {
+    const usersSnap = await db.collection('users').get();
+    
+    for (const doc of usersSnap.docs) {
+      const user = doc.data() as UserProfile;
+      const txsSnap = await db.collection('transactions')
+        .where('userId', '==', user.userId)
+        .get();
+        
+      if (!txsSnap.empty) {
+        const userTxs = txsSnap.docs.map(d => d.data() as Transaction);
         userTxs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         const lastTx = userTxs[0];
         if (new Date(lastTx.createdAt) < threeDaysAgo) {
@@ -230,9 +279,7 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
-  
-  // 1. Auth via Telegram WebApp initData
-  app.post("/api/auth/telegram", (req, res) => {
+  app.post("/api/auth/telegram", async (req, res) => {
     const { initData } = req.body;
     if (!initData || !BOT_TOKEN) {
       res.status(401).json({ error: "Missing initData or Bot Token not configured" });
@@ -245,8 +292,8 @@ async function startServer() {
       urlParams.delete("hash");
 
       if (!hash) {
-        res.status(400).json({ error: "No hash provided in initData" });
-        return;
+         res.status(400).json({ error: "No hash provided in initData" });
+         return;
       }
 
       // Sort keys alphabetically
@@ -270,8 +317,11 @@ async function startServer() {
 
       const user = JSON.parse(userStr);
       
-      let userProfile = users.find(u => u.userId === user.id);
-      if (!userProfile) {
+      const userRef = db.collection('users').doc(String(user.id));
+      const userDoc = await userRef.get();
+      
+      let userProfile: UserProfile;
+      if (!userDoc.exists) {
         userProfile = {
           userId: user.id,
           telegramUsername: user.username,
@@ -280,12 +330,15 @@ async function startServer() {
           telegramPhotoUrl: user.photo_url,
           displayName: user.first_name || user.username || "Foydalanuvchi",
         };
-        users.push(userProfile);
+        await userRef.set(userProfile);
       } else {
-        userProfile.telegramUsername = user.username;
-        userProfile.telegramFirstName = user.first_name;
-        userProfile.telegramLastName = user.last_name;
-        userProfile.telegramPhotoUrl = user.photo_url;
+        userProfile = userDoc.data() as UserProfile;
+        await userRef.update({
+          telegramUsername: user.username || null,
+          telegramFirstName: user.first_name || null,
+          telegramLastName: user.last_name || null,
+          telegramPhotoUrl: user.photo_url || null,
+        });
       }
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "24h" });
@@ -308,31 +361,40 @@ async function startServer() {
         res.status(401).json({ error: "Invalid token" });
         return;
       }
-      (req as any).user = decoded;
+      (req as Record<string, any>).user = decoded;
       next();
     });
   };
 
   // 2. Main data endpoint: returns goals and recent transactions
-  app.get("/api/data", authMiddleware, (req, res) => {
+  app.get("/api/data", authMiddleware, async (req, res) => {
     const userId = (req as any).user.userId;
-    // We send all goals (both active and completed) so they show up in history/stats.
-    const userGoals = goals.filter(g => g.userId === userId && !g.isArchived);
-    const userTransactions = transactions.filter(t => t.userId === userId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 50); // top 50 recent transactions
-      
-    const userProfile = users.find(u => u.userId === userId);
+    try {
+      const goalsSnap = await db.collection("goals").where("userId", "==", userId).get();
+      const userGoals = goalsSnap.docs.map(d => d.data() as Goal).filter(g => !g.isArchived);
 
-    res.json({ 
-      goals: userGoals, 
-      transactions: userTransactions,
-      profile: userProfile
-    });
+      const txsSnap = await db.collection("transactions").where("userId", "==", userId).get();
+      const userTransactions = txsSnap.docs
+        .map(d => d.data() as Transaction)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 50);
+
+      const userProfileDoc = await db.collection("users").doc(String(userId)).get();
+      const userProfile = userProfileDoc.exists ? userProfileDoc.data() : undefined;
+
+      res.json({ 
+        goals: userGoals, 
+        transactions: userTransactions,
+        profile: userProfile
+      });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: "Failed to fetch data" });
+    }
   });
 
   // 3. Create Goal
-  app.post("/api/goals", authMiddleware, (req, res) => {
+  app.post("/api/goals", authMiddleware, async (req, res) => {
     const userId = (req as any).user.userId;
     const { title, targetAmount, color, deadline } = req.body;
 
@@ -348,68 +410,104 @@ async function startServer() {
       currentAmount: 0,
       color: color || "#3b82f6",
       createdAt: new Date().toISOString(),
-      deadline: deadline || undefined
+      deadline: deadline || undefined,
+      isArchived: false,
+      isCompleted: false
     };
 
-    goals.push(newGoal);
-    res.json(newGoal);
+    try {
+      await db.collection("goals").doc(newGoal.id).set(newGoal);
+      res.json(newGoal);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: "Failed to create goal" });
+    }
   });
 
   // 3a. Update Goal
-  app.put("/api/goals/:id", authMiddleware, (req, res) => {
+  app.put("/api/goals/:id", authMiddleware, async (req, res) => {
     const userId = (req as any).user.userId;
     const { title, targetAmount, color, deadline, isCompleted } = req.body;
     const goalId = req.params.id;
 
-    const goal = goals.find(g => g.id === goalId && g.userId === userId);
-    if (!goal) {
-      return res.status(404).json({ error: "Goal not found" });
+    try {
+      const goalRef = db.collection("goals").doc(goalId);
+      const goalDoc = await goalRef.get();
+      if (!goalDoc.exists || (goalDoc.data() as Goal).userId !== userId) {
+        return res.status(404).json({ error: "Goal not found" });
+      }
+
+      const updates: any = {};
+      if (title) updates.title = title;
+      if (targetAmount) updates.targetAmount = parseInt(targetAmount, 10);
+      if (color) updates.color = color;
+      if (deadline !== undefined) updates.deadline = deadline;
+      if (isCompleted !== undefined) updates.isCompleted = isCompleted;
+
+      await goalRef.update(updates);
+      const updatedGoal = (await goalRef.get()).data();
+      res.json(updatedGoal);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: "Failed to update goal" });
     }
-
-    if (title) goal.title = title;
-    if (targetAmount) goal.targetAmount = parseInt(targetAmount, 10);
-    if (color) goal.color = color;
-    if (deadline !== undefined) goal.deadline = deadline;
-    if (isCompleted !== undefined) goal.isCompleted = isCompleted;
-
-    res.json(goal);
   });
 
   // 3b. Delete/Archive Goal
-  app.delete("/api/goals/:id", authMiddleware, (req, res) => {
+  app.delete("/api/goals/:id", authMiddleware, async (req, res) => {
     const userId = (req as any).user.userId;
     const goalId = req.params.id;
 
-    const goalIndex = goals.findIndex(g => g.id === goalId && g.userId === userId);
-    if (goalIndex === -1) {
-      return res.status(404).json({ error: "Goal not found" });
-    }
+    try {
+      const goalRef = db.collection("goals").doc(goalId);
+      const goalDoc = await goalRef.get();
+      if (!goalDoc.exists || (goalDoc.data() as Goal).userId !== userId) {
+        return res.status(404).json({ error: "Goal not found" });
+      }
 
-    goals.splice(goalIndex, 1);
-    
-    // Remove transactions for this goal
-    for (let i = transactions.length - 1; i >= 0; i--) {
-       if (transactions[i].goalId === goalId) {
-          transactions.splice(i, 1);
-       }
+      await goalRef.delete();
+      
+      const txsSnap = await db.collection("transactions")
+        .where("goalId", "==", goalId)
+        .where("userId", "==", userId)
+        .get();
+
+      const batch = db.batch();
+      txsSnap.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+
+      res.json({ success: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: "Failed to delete goal" });
     }
-    
-    res.json({ success: true });
   });
 
   // 4. Update Profile
-  app.put("/api/user/profile", authMiddleware, (req, res) => {
+  app.put("/api/user/profile", authMiddleware, async (req, res) => {
     const userId = (req as any).user.userId;
     const { displayName, preferredCurrency } = req.body;
     
-    const userProfile = users.find(u => u.userId === userId);
-    if (!userProfile) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    try {
+      const userRef = db.collection("users").doc(String(userId));
+      const userDoc = await userRef.get();
+      if (!userDoc.exists) {
+        return res.status(404).json({ error: "User not found" });
+      }
 
-    if (displayName) userProfile.displayName = displayName;
-    if (preferredCurrency) userProfile.preferredCurrency = preferredCurrency;
-    res.json({ profile: userProfile });
+      const updates: any = {};
+      if (displayName) updates.displayName = displayName;
+      if (preferredCurrency) updates.preferredCurrency = preferredCurrency;
+
+      await userRef.update(updates);
+      const updatedUser = (await userRef.get()).data();
+      res.json({ profile: updatedUser });
+    } catch(e) {
+      console.error(e);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
   });
 
   if (process.env.NODE_ENV !== "production") {

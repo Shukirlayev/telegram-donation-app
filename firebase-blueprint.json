@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "Goal": {
+      "title": "Goal",
+      "description": "User savings goales",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "number" },
+        "title": { "type": "string" },
+        "targetAmount": { "type": "number" },
+        "currentAmount": { "type": "number" },
+        "color": { "type": "string" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "User transaction logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "number" },
+        "goalId": { "type": "string" },
+        "amount": { "type": "number" },
+        "note": { "type": "string" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "number" },
+        "displayName": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "goals/{goalId}": {
+      "schema": { "$ref": "#/entities/Goal" },
+      "description": "Stores user goals."
+    },
+    "transactions/{txId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Stores user transactions."
+    },
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles."
+    }
+  }
+}

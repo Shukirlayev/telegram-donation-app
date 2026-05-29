@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // This application uses a backend API with the Firebase Admin SDK.
+    // Client SDK access is entirely disabled for security.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
