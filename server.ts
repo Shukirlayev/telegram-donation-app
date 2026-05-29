@@ -91,7 +91,7 @@ if (BOT_TOKEN) {
        // Fallback to old behavior
        const amountMatch = text.match(/\d+/);
        if (!amountMatch) {
-         return ctx.reply("Iltimos, kiritmoqchi bo'lgan summangizni yozing (masalan: 50000 noutbuk).");
+         return ctx.reply("Assalomu alaykum! AI tizimi hozircha ulanmagan (Sozlamalardan GEMINI_API_KEY kiritilishi kerak). Hozircha iltimos, summani yozing (masalan: 50000 noutbuk).");
        }
        const amount = parseInt(amountMatch[0], 10);
        const note = text.replace(amountMatch[0], '').trim().toLowerCase();
@@ -115,9 +115,9 @@ if (BOT_TOKEN) {
     const goalList = userGoals.map(g => `${g.title} (id: ${g.id})`).join(", ");
     try {
         const response = await ai.models.generateContent({
-           model: "gemini-3.5-flash",
+           model: "gemini-2.5-flash",
            systemInstruction: `Siz foydalanuvchiga moliyaviy maqsadlariga erishishda yordam beruvchi do'stona virtual moliya yordamchisisiz. Qisqa va foydali o'zbek tilida gaplashasiz.
-Agar foydalanuvchi qandaydir summa miqdorini maqsad uchun jamg'arganini aytgan bo'lsa (masalan, "Noutbukka 50 ming", "10000 oldim"), maxsus 'add_transaction' funksiyasidan foydalanib summani yozib qo'ying ("ming" / "k" = 000). Qaysi maqsad uchun qo'shganligini u aytgan gapdan fahmlang.
+Agar foydalanuvchi qandaydir summa miqdorini maqsad uchun jamg'arganini aytgan bo'lsa (masalan, "Noutbukka 50 ming", "10k oldim"), maxsus 'add_transaction' funksiyasidan foydalanib summani yozib qo'ying ("ming" / "k" = 000). Qaysi maqsad uchun qo'shganligini u aytgan gapdan fahmlang.
 Agar foydalanuvchi shunchaki maslahat so'rasa yoki motivatsiya kerak bo'lsa (masalan, "qanday pul tejlasam bo'ladi?", "bugun qiyin kun bo'ldi"), funksiyani chaqirmasdan, samimiy matnli javob yozing.
 Mavjud maqsadlari: ${goalList} (agar gapida bulardan birortasi aniq ishora qilingan bo'lsa id sini funksiyaga bering, agar ishora qilinmagan bo'lsa id ni bo'sh qoldiring).`,
            contents: text,
