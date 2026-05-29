@@ -185,9 +185,9 @@ export default function App() {
          )}
       </div>
 
-      {/* iOS Style Bottom Tab Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-t border-slate-200/60 pb-safe pt-2 px-6">
-        <div className="flex justify-around items-center max-w-md mx-auto pb-6">
+      {/* Floating Bottom Navigation (Glassmorphism Pill) */}
+      <div className="fixed bottom-6 left-0 right-0 flex justify-center z-50 pointer-events-none px-4">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.08)] px-2 py-2 rounded-full flex justify-between items-center gap-1 pointer-events-auto max-w-[320px] w-full">
            <NavItem icon={HomeIcon} label="Asosiy" isActive={activeTab === "home"} onClick={() => setActiveTab("home")} />
            <NavItem icon={PieChartIcon} label="Statistika" isActive={activeTab === "stats"} onClick={() => setActiveTab("stats")} />
            <NavItem icon={UserIcon} label="Profil" isActive={activeTab === "profile"} onClick={() => setActiveTab("profile")} />
@@ -201,12 +201,20 @@ function NavItem({ icon: Icon, label, isActive, onClick }: { icon: any, label: s
   return (
     <button 
       onClick={onClick} 
-      className={`flex flex-col items-center justify-center gap-1 w-20 transition-colors duration-200 ${
-        isActive ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+      className={`relative flex items-center justify-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300 ${
+        isActive ? "text-indigo-600 bg-white/60 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/30"
       }`}
     >
-      <Icon className={`w-6 h-6 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
-      <span className="text-[10px] font-semibold">{label}</span>
+      <Icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
+      {isActive && (
+        <motion.span 
+          initial={{ opacity: 0, width: 0 }} 
+          animate={{ opacity: 1, width: 'auto' }} 
+          className="text-[13px] font-semibold overflow-hidden whitespace-nowrap"
+        >
+          {label}
+        </motion.span>
+      )}
     </button>
   );
 }

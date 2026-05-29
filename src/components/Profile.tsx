@@ -54,7 +54,7 @@ export default function Profile({ profile, token, onRefresh, transactions, goals
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white p-5 rounded-[1.25rem] shadow-sm border border-slate-200/60 flex flex-col relative overflow-hidden"
+        className="bg-white/70 backdrop-blur-xl p-5 rounded-[1.25rem] shadow-sm border border-white/60 flex flex-col relative overflow-hidden"
       >
         <div className="relative z-10 flex items-center gap-5">
           <div className="relative shrink-0">
@@ -139,7 +139,7 @@ export default function Profile({ profile, token, onRefresh, transactions, goals
         
         <div>
           <h3 className="text-[13px] font-medium text-slate-500 ml-4 mb-1.5">ASOSIY SOZLAMALAR</h3>
-          <div className="bg-white rounded-[1.25rem] overflow-hidden shadow-sm border border-slate-200/60">
+          <div className="bg-white/70 backdrop-blur-xl rounded-[1.25rem] overflow-hidden shadow-sm border border-white/60">
              <SettingsRow icon={Globe} iconBg="bg-[#007AFF]" iconColor="text-white" label="Ilova tili" value="O'zbekcha" onClick={() => alert("Til sozlamalari tez orada qo'shiladi")} />
              <SettingsRow icon={CreditCard} iconBg="bg-[#34C759]" iconColor="text-white" label="Asosiy valyuta" value="UZS" onClick={() => alert("Faqat UZS valyutasi qo'llab-quvvatlanadi")} />
              <SettingsRow icon={Bell} iconBg="bg-[#FF3B30]" iconColor="text-white" label="Bildirishnomalar" value={notification ? "Yoqilgan" : "O'ch."} onClick={() => setNotification(!notification)} />
@@ -149,14 +149,14 @@ export default function Profile({ profile, token, onRefresh, transactions, goals
 
         <div>
            <h3 className="text-[13px] font-medium text-slate-500 ml-4 mb-1.5">XAVFSIZLIK</h3>
-           <div className="bg-white rounded-[1.25rem] overflow-hidden shadow-sm border border-slate-200/60">
+           <div className="bg-white/70 backdrop-blur-xl rounded-[1.25rem] overflow-hidden shadow-sm border border-white/60">
              <SettingsRow icon={Lock} iconBg="bg-[#8E8E93]" iconColor="text-white" label="PIN-kod o'rnatish" onClick={() => alert("PIN-kod sozlamalari yangilanmoqda...")} isLast={true} />
            </div>
         </div>
 
         <div>
           <h3 className="text-[13px] font-medium text-slate-500 ml-4 mb-1.5">MA'LUMOT</h3>
-          <div className="bg-white rounded-[1.25rem] overflow-hidden shadow-sm border border-slate-200/60">
+          <div className="bg-white/70 backdrop-blur-xl rounded-[1.25rem] overflow-hidden shadow-sm border border-white/60">
              <SettingsRow icon={HelpCircle} iconBg="bg-[#007AFF]" iconColor="text-white" label="Yordam va qoidalar" onClick={() => alert("Yordam sahifasi tayyorlanmoqda")} />
              <SettingsRow icon={Download} iconBg="bg-[#34C759]" iconColor="text-white" label="Tranzaksiyalarni yuklash" onClick={() => downloadCSV(transactions, "tranzaksiyalar.csv")} />
              <SettingsRow icon={Download} iconBg="bg-[#FF9500]" iconColor="text-white" label="Maqsadlarni yuklash" onClick={() => downloadCSV(goals, "maqsadlar.csv")} isLast={true} />
@@ -171,7 +171,7 @@ export default function Profile({ profile, token, onRefresh, transactions, goals
               alert("Oynani yoping");
             }
           }}
-          className="w-full bg-white text-[#FF3B30] font-semibold py-3.5 rounded-[1.25rem] border border-slate-200/60 shadow-sm flex items-center justify-center gap-2 active:bg-slate-50 transition-colors mb-6 text-[15px]"
+          className="w-full bg-white/70 backdrop-blur-xl text-[#FF3B30] font-semibold py-3.5 rounded-[1.25rem] border border-white/60 shadow-sm flex items-center justify-center gap-2 active:bg-white/50 transition-colors mb-6 text-[15px]"
         >
           <span>Chiqish / Yopish</span>
         </button>
@@ -183,7 +183,7 @@ export default function Profile({ profile, token, onRefresh, transactions, goals
 
 function SettingsRow({ icon: Icon, iconBg, iconColor, label, value, isLast = false, onClick }: any) {
   return (
-    <div onClick={onClick} className={`flex items-center justify-between py-3 px-4 bg-white active:bg-slate-100 transition-colors cursor-pointer relative`}>
+    <div onClick={onClick} className={`flex items-center justify-between py-3 px-4 bg-transparent active:bg-white/50 transition-colors cursor-pointer relative`}>
       <div className="flex items-center gap-3.5 z-10">
         <div className={`w-[30px] h-[30px] rounded-[7px] flex items-center justify-center shrink-0 ${iconBg} shadow-sm`}>
            <Icon className={`w-[18px] h-[18px] ${iconColor}`} />
@@ -191,10 +191,10 @@ function SettingsRow({ icon: Icon, iconBg, iconColor, label, value, isLast = fal
         <span className="font-semibold text-slate-800 text-[16px] tracking-tight">{label}</span>
       </div>
       <div className="flex items-center gap-2 z-10">
-        {value && <span className="text-[15px] font-medium text-slate-400">{value}</span>}
+        {value && <span className="text-[15px] font-medium text-slate-500">{value}</span>}
         <ChevronRight className="w-[18px] h-[18px] text-slate-300" />
       </div>
-      {!isLast && <div className="absolute bottom-0 left-[60px] right-0 h-[1px] bg-slate-200/60" />}
+      {!isLast && <div className="absolute bottom-0 left-[60px] right-0 h-[1px] bg-black/5" />}
     </div>
   )
 }

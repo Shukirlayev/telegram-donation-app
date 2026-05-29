@@ -36,18 +36,18 @@ export default function Stats({ goals, transactions }: StatsProps) {
 
   if (goals.length === 0) {
     return (
-      <div className="bg-white p-8 rounded-[1.5rem] border border-dashed border-slate-200 text-center shadow-sm">
-        <PieChartIcon className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-        <p className="text-slate-500 font-medium text-sm">Hozircha maqsadlar yo'q</p>
+      <div className="bg-white/60 backdrop-blur-xl p-8 rounded-[1.5rem] border border-white/60 text-center shadow-sm">
+        <PieChartIcon className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+        <p className="text-slate-600 font-medium text-sm">Hozircha maqsadlar yo'q</p>
       </div>
     );
   }
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-white p-8 rounded-[1.5rem] border border-dashed border-slate-200 text-center shadow-sm">
-        <PieChartIcon className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-        <p className="text-slate-500 font-medium text-sm">Maqsadlarga hali pul ajratilmagan</p>
+      <div className="bg-white/60 backdrop-blur-xl p-8 rounded-[1.5rem] border border-white/60 text-center shadow-sm">
+        <PieChartIcon className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+        <p className="text-slate-600 font-medium text-sm">Maqsadlarga hali pul ajratilmagan</p>
       </div>
     );
   }
@@ -61,7 +61,7 @@ export default function Stats({ goals, transactions }: StatsProps) {
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white p-6 rounded-[1.25rem] shadow-sm border border-slate-200/60 flex flex-col items-center relative overflow-hidden"
+        className="bg-white/70 backdrop-blur-xl p-6 rounded-[1.25rem] shadow-sm border border-white/60 flex flex-col items-center relative overflow-hidden"
       >
         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-indigo-50/50 to-transparent pointer-events-none" />
         <div className="h-[250px] w-full relative z-10">
@@ -99,7 +99,7 @@ export default function Stats({ goals, transactions }: StatsProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white p-5 rounded-[1.25rem] shadow-sm border border-slate-200/60"
+          className="bg-white/70 backdrop-blur-xl p-5 rounded-[1.25rem] shadow-sm border border-white/60"
         >
           <h3 className="font-display font-semibold text-slate-800 text-[17px] tracking-tight mb-4">Oxirgi 7 Kundagi Tejashlar</h3>
           <div className="h-[220px] w-full mt-2">
@@ -124,14 +124,14 @@ export default function Stats({ goals, transactions }: StatsProps) {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-white rounded-[1.25rem] shadow-sm border border-slate-200/60 mb-6 overflow-hidden"
+        className="bg-white/70 backdrop-blur-xl rounded-[1.25rem] shadow-sm border border-white/60 mb-6 overflow-hidden"
       >
-        <div className="p-4 border-b border-slate-100">
+        <div className="p-4 border-b border-black/5">
            <h3 className="font-display font-semibold text-slate-800 text-[17px] tracking-tight">Mablag'lar</h3>
         </div>
         <div className="flex flex-col">
           {chartData.map((d, i) => (
-             <div key={i} className={`flex justify-between items-center py-3.5 px-4 bg-white relative ${i !== chartData.length - 1 ? 'border-b border-slate-100' : ''}`}>
+             <div key={i} className={`flex justify-between items-center py-3.5 px-4 bg-transparent relative ${i !== chartData.length - 1 ? 'border-b border-black/5' : ''}`}>
                 <div className="flex items-center gap-3">
                   <div className="w-[14px] h-[14px] rounded-full" style={{ backgroundColor: d.color }} />
                   <span className="text-slate-800 font-semibold text-[16px]">{d.name}</span>
