@@ -6,7 +6,6 @@ import { Telegraf, Markup } from "telegraf";
 import { createServer as createViteServer } from "vite";
 import cron from "node-cron";
 import * as dotenv from "dotenv";
-import { GoogleGenAI, Type } from "@google/genai";
 
 dotenv.config();
 
@@ -47,14 +46,6 @@ const users: UserProfile[] = [];
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const JWT_SECRET = process.env.JWT_SECRET || "default_unsafe_secret";
 
-let ai: GoogleGenAI | null = null;
-if (process.env.GEMINI_API_KEY) {
-  ai = new GoogleGenAI({ 
-    apiKey: process.env.GEMINI_API_KEY,
-    httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
-  });
-}
-
 let bot: Telegraf | null = null;
 
 if (BOT_TOKEN) {
@@ -64,7 +55,7 @@ if (BOT_TOKEN) {
     ctx.reply(
       "👋 Salom! Maqsadlar va tejashlar botiga xush kelibsiz.\n\n" +
       "Avval *Mini App* orqali o'z maqsadingizni (kategoriyalarni) yarating. " +
-      "Keyin esa, menga summani yoki maqsadingiz haqida gapirib bering (masalan: `50000 noutbuk` yoki `Bugun mashina uchun 100 ming yig'dim`).",
+      "Keyin esa, menga summani yozib yuboring (masalan: `50000 noutbuk`).",
       { parse_mode: "Markdown" }
     );
   });
@@ -86,89 +77,35 @@ if (BOT_TOKEN) {
       return ctx.reply(`💳 ${amount.toLocaleString()} UZS yozildi.\nQaysi maqsad (kategoriya) uchun qo'shamiz?`, Markup.inlineKeyboard(buttons));
     }
 
-    // Attempt Gemini parsing for natural language
-    if (!ai) {
-       // Fallback to old behavior
-       const amountMatch = text.match(/\d+/);
-       if (!amountMatch) {
-         return ctx.reply("Assalomu alaykum! AI tizimi hozircha ulanmagan (Sozlamalardan GEMINI_API_KEY kiritilishi kerak). Hozircha iltimos, summani yozing (masalan: 50000 noutbuk).");
+    const amountMatch = text.match(/\d+/);
+    if (!amountMatch) {
+       // Conversational fallback without AI
+       const greetings = ["salom", "qalay", "qanaqa", "yaxshimisiz", "assalom", "hayit", "bayram"];
+       const textLower = text.toLowerCase();
+       const isGreeting = greetings.some(w => textLower.includes(w));
+       
+       if (isGreeting) {
+           return ctx.reply("Assalomu alaykum! Kayfiyatlar yaxshimi? 😊\n\nMen sizning shaxsiy moliyaviy yordamchingizman. Maqsadlaringiz sari pul yig'ishda yordam beraman. Menga shunchaki summani yozing (masalan: 50000 noutbuk).");
        }
-       const amount = parseInt(amountMatch[0], 10);
-       const note = text.replace(amountMatch[0], '').trim().toLowerCase();
-       let matchedGoal = null;
-       if (note.length > 2) {
-         const cleanNote = note.replace('uchun', '').replace('ga', '').trim();
-         matchedGoal = userGoals.find(g => cleanNote.includes(g.title.toLowerCase()) || g.title.toLowerCase().includes(cleanNote));
-       }
-       if (matchedGoal) {
-         matchedGoal.currentAmount += amount;
-         transactions.push({ id: crypto.randomUUID(), userId, goalId: matchedGoal.id, amount, note: text, createdAt: new Date().toISOString() });
-         let message = `✅ ${amount.toLocaleString()} UZS "${matchedGoal.title}" maqsadiga qo'shildi!\n\nJami yig'ildi: ${matchedGoal.currentAmount.toLocaleString()} / ${matchedGoal.targetAmount ? matchedGoal.targetAmount.toLocaleString() : 'N/A'} UZS`;
-         if (matchedGoal.currentAmount >= matchedGoal.targetAmount) message += `\n\n🎉 Tabriklaymiz! Siz "${matchedGoal.title}" uchun yetarli pul yig'dingiz!`;
-         return ctx.reply(message);
-       }
-       const buttons = userGoals.map(g => [Markup.button.callback(g.title, `add_${amount}_${g.id}`)]);
-       return ctx.reply(`💳 ${amount.toLocaleString()} UZS yozildi.\nQaysi maqsad (kategoriya) uchun qo'shamiz?`, Markup.inlineKeyboard(buttons));
+       return ctx.reply("Kechirasiz, gapingizdan summani topa olmadim. 🧐\n\nIltimos, pul qo'shish uchun raqamlardan foydalaning (masalan: 50000 noutbuk). Yoki Mini App orqali maqsadlaringizni boshqaring!");
     }
 
-    // Use Gemini
-    const goalList = userGoals.map(g => `${g.title} (id: ${g.id})`).join(", ");
-    try {
-        const response = await ai.models.generateContent({
-           model: "gemini-2.5-flash",
-           systemInstruction: `Siz foydalanuvchiga moliyaviy maqsadlariga erishishda yordam beruvchi do'stona virtual moliya yordamchisisiz. Qisqa va foydali o'zbek tilida gaplashasiz.
-Agar foydalanuvchi qandaydir summa miqdorini maqsad uchun jamg'arganini aytgan bo'lsa (masalan, "Noutbukka 50 ming", "10k oldim"), maxsus 'add_transaction' funksiyasidan foydalanib summani yozib qo'ying ("ming" / "k" = 000). Qaysi maqsad uchun qo'shganligini u aytgan gapdan fahmlang.
-Agar foydalanuvchi shunchaki maslahat so'rasa yoki motivatsiya kerak bo'lsa (masalan, "qanday pul tejlasam bo'ladi?", "bugun qiyin kun bo'ldi"), funksiyani chaqirmasdan, samimiy matnli javob yozing.
-Mavjud maqsadlari: ${goalList} (agar gapida bulardan birortasi aniq ishora qilingan bo'lsa id sini funksiyaga bering, agar ishora qilinmagan bo'lsa id ni bo'sh qoldiring).`,
-           contents: text,
-           config: {
-             tools: [{
-                functionDeclarations: [{
-                   name: "add_transaction",
-                   description: "Foydalanuvchining tejab qo'ygan pul miqdorini kassaga (tranzaksiyaga) qo'shish.",
-                   parameters: {
-                      type: Type.OBJECT,
-                      properties: {
-                         amount: { type: Type.NUMBER, description: "Yig'ib qo'yilgan, ajratilgan yoki tejalgan summa (UZS) rakamlarda. Masalan: 50 ming desa 50000 qilib berasiz, 100k = 100000." },
-                         goalId: { type: Type.STRING, description: "Qaysi maqsadga pul qo'shilayotganini ifodalovchi 'id'. Gapga mos maqsad mavjud bo'lsagina id yuboring. Agar aniq bo'lmasa yo'q bo'lsa, stringni bo'sh qoldiring." }
-                      },
-                      required: ["amount"]
-                   }
-                }]
-             }]
-           }
-        });
-
-        if (response.functionCalls && response.functionCalls.length > 0) {
-           const funcCall = response.functionCalls[0];
-           if (funcCall.name === "add_transaction") {
-              const amount = funcCall.args.amount as number;
-              const goalId = funcCall.args.goalId as string;
-
-              if (goalId) {
-                  const targetGoal = userGoals.find(g => g.id === goalId);
-                  if (targetGoal) {
-                      targetGoal.currentAmount += amount;
-                      transactions.push({ id: crypto.randomUUID(), userId, goalId: targetGoal.id, amount, note: text + ' (Gemini AI)', createdAt: new Date().toISOString() });
-                      let message = `✅ ${amount.toLocaleString()} UZS "${targetGoal.title}" maqsadiga qo'shildi!\n\nJami yig'ildi: ${targetGoal.currentAmount.toLocaleString()} / ${targetGoal.targetAmount ? targetGoal.targetAmount.toLocaleString() : 'N/A'} UZS`;
-                      if (targetGoal.currentAmount >= targetGoal.targetAmount) message += `\n\n🎉 Tabriklaymiz! Siz "${targetGoal.title}" uchun yetarli pul yig'dingiz!`;
-                      return ctx.reply(message);
-                  }
-              }
-
-              // Need to select goal manually
-              const buttons = userGoals.map(g => [Markup.button.callback(g.title, `add_${amount}_${g.id}`)]);
-              return ctx.reply(`💳 ${amount.toLocaleString()} UZS yozildi.\nQaysi maqsad (kategoriya) uchun qo'shamiz?`, Markup.inlineKeyboard(buttons));
-           }
-        }
-        
-        if (response.text) {
-           return ctx.reply(response.text);
-        }
-    } catch(err) {
-        console.error("Gemini err:", err);
-        return ctx.reply("Sizni tushunolmadim, lekin raqamlarda ifodalasangiz bo'ladi (M: 50000 noutbuk).");
+    const amount = parseInt(amountMatch[0], 10);
+    const note = text.replace(amountMatch[0], '').trim().toLowerCase();
+    let matchedGoal = null;
+    if (note.length > 2) {
+       const cleanNote = note.replace('uchun', '').replace('ga', '').trim();
+       matchedGoal = userGoals.find(g => cleanNote.includes(g.title.toLowerCase()) || g.title.toLowerCase().includes(cleanNote));
     }
+    if (matchedGoal) {
+       matchedGoal.currentAmount += amount;
+       transactions.push({ id: crypto.randomUUID(), userId, goalId: matchedGoal.id, amount, note: text, createdAt: new Date().toISOString() });
+       let message = `✅ ${amount.toLocaleString()} UZS "${matchedGoal.title}" maqsadiga qo'shildi!\n\nJami yig'ildi: ${matchedGoal.currentAmount.toLocaleString()} / ${matchedGoal.targetAmount ? matchedGoal.targetAmount.toLocaleString() : 'N/A'} UZS`;
+       if (matchedGoal.currentAmount >= matchedGoal.targetAmount) message += `\n\n🎉 Tabriklaymiz! Siz "${matchedGoal.title}" uchun yetarli pul yig'dingiz!`;
+       return ctx.reply(message);
+    }
+    const buttons = userGoals.map(g => [Markup.button.callback(g.title, `add_${amount}_${g.id}`)]);
+    return ctx.reply(`💳 ${amount.toLocaleString()} UZS yozildi.\nQaysi maqsad (kategoriya) uchun qo'shamiz?`, Markup.inlineKeyboard(buttons));
   });
 
   bot.action(/^add_(\d+)_([A-Za-z0-9\-]+)$/, async (ctx) => {
