@@ -8,19 +8,65 @@ import cron from "node-cron";
 import * as dotenv from "dotenv";
 import fs from "fs";
 
-import { initializeApp, applicationDefault } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, query, where, writeBatch } from "firebase/firestore";
 
 dotenv.config();
 
 const firebaseConfig = JSON.parse(fs.readFileSync('./firebase-applet-config.json', 'utf8'));
 
-// Initialize Firebase Admin
-const adminApp = initializeApp({
-  credential: applicationDefault(),
-  projectId: firebaseConfig.projectId
-});
-const db = getFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
+// Initialize Firebase Web SDK instead of Admin to bypass container cred issue
+const adminApp = initializeApp(firebaseConfig);
+const firestoreDb = getFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
+
+const db = {
+  collection: (path: string) => new CollectionRef(`bot_secret_xyz123/prod/${path}`),
+  batch: () => {
+    const b = writeBatch(firestoreDb);
+    return {
+      set: function(refInfo: any, data: any) { b.set(refInfo.ref, data); return this; },
+      update: function(refInfo: any, data: any) { b.update(refInfo.ref, data); return this; },
+      delete: function(refInfo: any) { b.delete(refInfo.ref); return this; },
+      commit: () => b.commit()
+    };
+  }
+};
+
+class CollectionRef {
+  constructor(public path: string, public qs: any[] = []) {}
+  where(field: string, op: any, val: any) {
+    return new CollectionRef(this.path, [...this.qs, where(field, op, val)]);
+  }
+  doc(id?: string) {
+    return new DocRef(id ? `${this.path}/${id}` : `${this.path}/${crypto.randomUUID()}`);
+  }
+  async get() {
+    let q = this.qs.length > 0 ? query(collection(firestoreDb, this.path), ...this.qs) : collection(firestoreDb, this.path);
+    const snap = await getDocs(q);
+    return {
+      size: snap.size,
+      empty: snap.empty,
+      docs: snap.docs.map(d => new DocSnapshot(d)),
+      forEach: (cb: any) => snap.forEach(d => cb(new DocSnapshot(d)))
+    };
+  }
+}
+
+class DocRef {
+  public ref: any;
+  constructor(public path: string) { this.ref = doc(firestoreDb, path); }
+  async get() { return new DocSnapshot(await getDoc(this.ref)); }
+  async set(data: any) { return setDoc(this.ref, data); }
+  async update(data: any) { return updateDoc(this.ref, data); }
+  async delete() { return deleteDoc(this.ref); }
+}
+
+class DocSnapshot {
+  constructor(private snap: any) {}
+  get exists() { return this.snap.exists(); }
+  data() { return this.snap.data() || {}; }
+  get ref() { return new DocRef(this.snap.ref.path); }
+}
 
 type Goal = {
   id: string;
