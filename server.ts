@@ -38,6 +38,7 @@ type UserProfile = {
   telegramLastName?: string;
   telegramPhotoUrl?: string;
   displayName?: string;
+  preferredCurrency?: string;
 };
 
 const goals: Goal[] = [];
@@ -72,11 +73,15 @@ if (BOT_TOKEN) {
       return ctx.reply("Sizda hali maqsadlar yo'q! 🎯\nIltimos, avval Mini App orqali yangi maqsad (kategoriya) qo'shing.");
     }
 
+    const userProfile = users.find(u => u.userId === userId);
+    const currency = userProfile?.preferredCurrency || "UZS";
+    const rate = currency === 'UZS' ? 1 : currency === 'USD' ? 12500 : currency === 'EUR' ? 13500 : currency === 'RUB' ? 140 : 1;
+
     // Try very strict match for quick entry (only digits)
     if (/^\d+$/.test(text)) {
       const amount = parseInt(text, 10);
       const buttons = userGoals.map(g => [Markup.button.callback(g.title, `add_${amount}_${g.id}`)]);
-      return ctx.reply(`💳 ${amount.toLocaleString()} UZS yozildi.\nQaysi maqsad (kategoriya) uchun qo'shamiz?`, Markup.inlineKeyboard(buttons));
+      return ctx.reply(`💳 ${amount.toLocaleString()} ${currency} yozildi.\nQaysi maqsad (kategoriya) uchun qo'shamiz?`, Markup.inlineKeyboard(buttons));
     }
 
     const amountMatch = text.match(/\d+/);
@@ -100,14 +105,15 @@ if (BOT_TOKEN) {
        matchedGoal = userGoals.find(g => cleanNote.includes(g.title.toLowerCase()) || g.title.toLowerCase().includes(cleanNote));
     }
     if (matchedGoal) {
-       matchedGoal.currentAmount += amount;
-       transactions.push({ id: crypto.randomUUID(), userId, goalId: matchedGoal.id, amount, note: text, createdAt: new Date().toISOString() });
-       let message = `✅ ${amount.toLocaleString()} UZS "${matchedGoal.title}" maqsadiga qo'shildi!\n\nJami yig'ildi: ${matchedGoal.currentAmount.toLocaleString()} / ${matchedGoal.targetAmount ? matchedGoal.targetAmount.toLocaleString() : 'N/A'} UZS`;
-       if (matchedGoal.currentAmount >= matchedGoal.targetAmount) message += `\n\n🎉 Tabriklaymiz! Siz "${matchedGoal.title}" uchun yetarli pul yig'dingiz!`;
+       const baseAmount = amount * rate;
+       matchedGoal.currentAmount += baseAmount;
+       transactions.push({ id: crypto.randomUUID(), userId, goalId: matchedGoal.id, amount: baseAmount, note: text, createdAt: new Date().toISOString() });
+       let message = `✅ ${amount.toLocaleString()} ${currency} "${matchedGoal.title}" maqsadiga qo'shildi!\n\nJami yig'ildi: ${(matchedGoal.currentAmount / rate).toLocaleString()} / ${matchedGoal.targetAmount ? (matchedGoal.targetAmount / rate).toLocaleString() : 'N/A'} ${currency}`;
+       if (matchedGoal.currentAmount >= (matchedGoal.targetAmount || 0)) message += `\n\n🎉 Tabriklaymiz! Siz "${matchedGoal.title}" uchun yetarli pul yig'dingiz!`;
        return ctx.reply(message);
     }
     const buttons = userGoals.map(g => [Markup.button.callback(g.title, `add_${amount}_${g.id}`)]);
-    return ctx.reply(`💳 ${amount.toLocaleString()} UZS yozildi.\nQaysi maqsad (kategoriya) uchun qo'shamiz?`, Markup.inlineKeyboard(buttons));
+    return ctx.reply(`💳 ${amount.toLocaleString()} ${currency} yozildi.\nQaysi maqsad (kategoriya) uchun qo'shamiz?`, Markup.inlineKeyboard(buttons));
   });
 
   bot.action(/^add_(\d+)_([A-Za-z0-9\-]+)$/, async (ctx) => {
@@ -117,28 +123,33 @@ if (BOT_TOKEN) {
 
     if (!userId) return;
 
+    const userProfile = users.find(u => u.userId === userId);
+    const currency = userProfile?.preferredCurrency || "UZS";
+    const rate = currency === 'UZS' ? 1 : currency === 'USD' ? 12500 : currency === 'EUR' ? 13500 : currency === 'RUB' ? 140 : 1;
+
     const goal = goals.find(g => g.id === goalId && g.userId === userId);
     if (!goal) {
       return ctx.answerCbQuery("❌ Kechirasiz, maqsad topilmadi.");
     }
 
     // Process transaction
-    goal.currentAmount += amount;
+    const baseAmount = amount * rate;
+    goal.currentAmount += baseAmount;
     transactions.push({
       id: crypto.randomUUID(),
       userId,
       goalId: goal.id,
-      amount,
+      amount: baseAmount,
       note: 'Bot orqali tanlandi',
       createdAt: new Date().toISOString(),
     });
 
     await ctx.answerCbQuery("✅ Saqlandi!");
     
-    let message = `✅ ${amount.toLocaleString()} UZS "${goal.title}" maqsadiga qo'shildi!\n\n` +
-      `Jami yig'ildi: ${goal.currentAmount.toLocaleString()} / ${goal.targetAmount ? goal.targetAmount.toLocaleString() : 'N/A'} UZS`;
+    let message = `✅ ${amount.toLocaleString()} ${currency} "${goal.title}" maqsadiga qo'shildi!\n\n` +
+      `Jami yig'ildi: ${(goal.currentAmount / rate).toLocaleString()} / ${goal.targetAmount ? (goal.targetAmount / rate).toLocaleString() : 'N/A'} ${currency}`;
     
-    if (goal.currentAmount >= goal.targetAmount) {
+    if (goal.currentAmount >= (goal.targetAmount || 0)) {
       message += `\n\n🎉 Tabriklaymiz! Siz "${goal.title}" uchun yetarli pul yig'dingiz!`;
     }
 
@@ -343,14 +354,15 @@ async function startServer() {
   // 4. Update Profile
   app.put("/api/user/profile", authMiddleware, (req, res) => {
     const userId = (req as any).user.userId;
-    const { displayName } = req.body;
+    const { displayName, preferredCurrency } = req.body;
     
     const userProfile = users.find(u => u.userId === userId);
     if (!userProfile) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    userProfile.displayName = displayName;
+    if (displayName) userProfile.displayName = displayName;
+    if (preferredCurrency) userProfile.preferredCurrency = preferredCurrency;
     res.json({ profile: userProfile });
   });
 

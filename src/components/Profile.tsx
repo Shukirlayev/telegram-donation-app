@@ -7,6 +7,7 @@ import {
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { downloadCSV } from "../utils/export";
+import Portal from "./Portal";
 import { useTranslation, translations } from "../i18n";
 import { useAppContext } from "../contexts/AppContext";
 
@@ -29,6 +30,7 @@ export default function Profile({ profile, token, onRefresh, transactions, goals
   const [showLangModal, setShowLangModal] = useState(false);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const handleSaveName = async () => {
     if (!token || !editNameValue.trim()) return;
@@ -171,7 +173,7 @@ export default function Profile({ profile, token, onRefresh, transactions, goals
         <div>
            <h3 className="text-[13px] font-medium text-slate-500 dark:text-slate-400 ml-4 mb-1.5">{t("profile.infoGroup")}</h3>
            <div className="bg-white/70 dark:bg-slate-800/80 backdrop-blur-xl rounded-[1.25rem] overflow-hidden shadow-sm border border-white/60 dark:border-slate-700/50 transition-colors">
-             <SettingsRow icon={HelpCircle} iconBg="bg-[#007AFF]" iconColor="text-white" label={t("profile.help")} onClick={() => alert("Soon...")} />
+             <SettingsRow icon={HelpCircle} iconBg="bg-[#007AFF]" iconColor="text-white" label={t("profile.help")} onClick={() => setShowHelpModal(true)} />
              <SettingsRow icon={Download} iconBg="bg-[#34C759]" iconColor="text-white" label={t("profile.downloadTx")} onClick={() => downloadCSV(transactions, "tranzaksiyalar.csv")} />
              <SettingsRow icon={Download} iconBg="bg-[#FF9500]" iconColor="text-white" label={t("profile.downloadGoals")} onClick={() => downloadCSV(goals, "maqsadlar.csv")} isLast={true} />
            </div>
@@ -193,110 +195,162 @@ export default function Profile({ profile, token, onRefresh, transactions, goals
       </motion.div>
 
       {/* Language Selection Modal */}
-      <AnimatePresence>
-        {showLangModal && (
-          <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-              onClick={() => setShowLangModal(false)}
-            />
-            <motion.div 
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-t-[2rem] sm:rounded-[2rem] p-6 relative z-10 shadow-2xl mb-safe transition-colors"
-            >
-              <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6 sm:hidden transition-colors" />
-              <h3 className="text-xl font-display font-semibold text-slate-800 dark:text-white text-center mb-6">{t("profile.languageModalTitle")}</h3>
-              
-              <div className="space-y-3">
-                {['uz', 'en', 'ru'].map((l) => (
-                  <button key={l} onClick={() => { setLang(l as any); setShowLangModal(false); }} className={`w-full p-4 rounded-2xl flex items-center justify-between transition-colors ${lang === l ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 shadow-sm' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-slate-700'}`}>
-                     <span className="font-semibold">{(translations[l as 'uz'|'en'|'ru'] as any).profile.languageNames[l]}</span>
-                     {lang === l && <Check className="w-5 h-5 text-indigo-500" />}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <Portal>
+        <AnimatePresence>
+          {showLangModal && (
+            <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={() => setShowLangModal(false)}
+              />
+              <motion.div 
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-t-[2rem] sm:rounded-[2rem] p-6 relative z-10 shadow-2xl mb-safe transition-colors"
+              >
+                <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6 sm:hidden transition-colors" />
+                <h3 className="text-xl font-display font-semibold text-slate-800 dark:text-white text-center mb-6">{t("profile.languageModalTitle")}</h3>
+                
+                <div className="space-y-3">
+                  {['uz', 'en', 'ru'].map((l) => (
+                    <button key={l} onClick={() => { setLang(l as any); setShowLangModal(false); }} className={`w-full p-4 rounded-2xl flex items-center justify-between transition-colors ${lang === l ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 shadow-sm' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-slate-700'}`}>
+                       <span className="font-semibold">{(translations[l as 'uz'|'en'|'ru'] as any).profile.languageNames[l]}</span>
+                       {lang === l && <Check className="w-5 h-5 text-indigo-500" />}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </Portal>
 
       {/* Currency Selection Modal */}
-      <AnimatePresence>
-        {showCurrencyModal && (
-          <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-              onClick={() => setShowCurrencyModal(false)}
-            />
-            <motion.div 
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-t-[2rem] sm:rounded-[2rem] p-6 relative z-10 shadow-2xl mb-safe transition-colors"
-            >
-              <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6 sm:hidden transition-colors" />
-              <h3 className="text-xl font-display font-semibold text-slate-800 dark:text-white text-center mb-6">Valyutani tanlang</h3>
-              
-              <div className="space-y-3">
-                {['UZS', 'USD', 'EUR', 'RUB'].map((c) => (
-                  <button key={c} onClick={() => { setCurrency(c as any); setShowCurrencyModal(false); showToast("Valyuta o'zgartirildi", "success"); }} className={`w-full p-4 rounded-2xl flex items-center justify-between transition-colors ${currency === c ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 shadow-sm' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-slate-700'}`}>
-                     <span className="font-semibold">{c}</span>
-                     {currency === c && <Check className="w-5 h-5 text-indigo-500" />}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <Portal>
+        <AnimatePresence>
+          {showCurrencyModal && (
+            <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={() => setShowCurrencyModal(false)}
+              />
+              <motion.div 
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-t-[2rem] sm:rounded-[2rem] p-6 relative z-10 shadow-2xl mb-safe transition-colors"
+              >
+                <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6 sm:hidden transition-colors" />
+                <h3 className="text-xl font-display font-semibold text-slate-800 dark:text-white text-center mb-6">Valyutani tanlang</h3>
+                
+                <div className="space-y-3">
+                  {['UZS', 'USD', 'EUR', 'RUB'].map((c) => (
+                    <button key={c} onClick={() => { setCurrency(c as any); setShowCurrencyModal(false); showToast("Valyuta o'zgartirildi", "success"); }} className={`w-full p-4 rounded-2xl flex items-center justify-between transition-colors ${currency === c ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 shadow-sm' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-slate-700'}`}>
+                       <span className="font-semibold">{c}</span>
+                       {currency === c && <Check className="w-5 h-5 text-indigo-500" />}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </Portal>
 
       {/* Theme Selection Modal */}
-      <AnimatePresence>
-        {showThemeModal && (
-          <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-              onClick={() => setShowThemeModal(false)}
-            />
-            <motion.div 
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-t-[2rem] sm:rounded-[2rem] p-6 relative z-10 shadow-2xl mb-safe transition-colors"
-            >
-              <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6 sm:hidden transition-colors" />
-              <h3 className="text-xl font-display font-semibold text-slate-800 dark:text-white text-center mb-6">Tungi rejim</h3>
-              
-              <div className="space-y-3">
-                {[
-                  { id: 'light', label: 'Kunduzgi' },
-                  { id: 'dark', label: 'Tungi' },
-                  { id: 'system', label: 'Avtomatik (Tizim)' }
-                ].map((tOpt) => (
-                  <button key={tOpt.id} onClick={() => { setTheme(tOpt.id as any); setShowThemeModal(false); }} className={`w-full p-4 rounded-2xl flex items-center justify-between transition-colors ${theme === tOpt.id ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 shadow-sm' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-slate-700'}`}>
-                     <span className="font-semibold">{tOpt.label}</span>
-                     {theme === tOpt.id && <Check className="w-5 h-5 text-indigo-500" />}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <Portal>
+        <AnimatePresence>
+          {showThemeModal && (
+            <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={() => setShowThemeModal(false)}
+              />
+              <motion.div 
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-t-[2rem] sm:rounded-[2rem] p-6 relative z-10 shadow-2xl mb-safe transition-colors"
+              >
+                <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6 sm:hidden transition-colors" />
+                <h3 className="text-xl font-display font-semibold text-slate-800 dark:text-white text-center mb-6">Tungi rejim</h3>
+                
+                <div className="space-y-3">
+                  {[
+                    { id: 'light', label: 'Kunduzgi' },
+                    { id: 'dark', label: 'Tungi' },
+                    { id: 'system', label: 'Avtomatik (Tizim)' }
+                  ].map((tOpt) => (
+                    <button key={tOpt.id} onClick={() => { setTheme(tOpt.id as any); setShowThemeModal(false); }} className={`w-full p-4 rounded-2xl flex items-center justify-between transition-colors ${theme === tOpt.id ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 shadow-sm' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-slate-700'}`}>
+                       <span className="font-semibold">{tOpt.label}</span>
+                       {theme === tOpt.id && <Check className="w-5 h-5 text-indigo-500" />}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </Portal>
+
+      {/* Help Modal */}
+      <Portal>
+        <AnimatePresence>
+          {showHelpModal && (
+            <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={() => setShowHelpModal(false)}
+              />
+              <motion.div 
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-t-[2rem] sm:rounded-[2rem] p-6 relative z-10 shadow-2xl mb-safe transition-colors max-h-[80vh] overflow-y-auto"
+              >
+                <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6 sm:hidden transition-colors" />
+                <h3 className="text-xl font-display font-semibold text-slate-800 dark:text-white text-center mb-4">Yordam va qoidalar</h3>
+                
+                <div className="space-y-4 text-slate-600 dark:text-slate-300 text-[15px] leading-relaxed pb-4">
+                   <div>
+                     <h4 className="font-semibold text-slate-800 dark:text-white text-[16px] mb-1">Qanday ishlaydi?</h4>
+                     <p>Ilova sizga maqsadlaringizni yaratish va boshqarish imkonini beradi. Har safar Telegram bot orqali pul o'tkazsangiz, u avtomatik ravishda tanlangan maqsadingizga qo'shiladi.</p>
+                   </div>
+                   <div>
+                     <h4 className="font-semibold text-slate-800 dark:text-white text-[16px] mb-1">Telegram Bot</h4>
+                     <p>Bot sizning yordamchingizdir. Unga "50000 noutbuk" deb yozsangiz, tushunadi. Agar aniq maqsad deb topmasa, eng yaxshi mos keladiganini so'raydi.</p>
+                   </div>
+                   <div>
+                     <h4 className="font-semibold text-slate-800 dark:text-white text-[16px] mb-1">Valyutalar</h4>
+                     <p>Siz 4 xil valyutadan foydalanishingiz mumkin. Kiritilgan ma'lumotlar avtomatik hisoblab boriladi.</p>
+                   </div>
+                </div>
+                
+                <button onClick={() => setShowHelpModal(false)} className="w-full bg-slate-800 dark:bg-slate-700 text-white font-semibold py-3.5 rounded-2xl active:scale-95 transition-transform">
+                   Tushunarli
+                </button>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </Portal>
     </div>
   );
 }

@@ -55,32 +55,80 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('app_theme', t);
   };
 
-  const setCurrency = (c: Currency) => {
+  const setCurrencyAndSave = async (c: Currency) => {
     setCurrencyState(c);
     localStorage.setItem('app_currency', c);
+    
+    const token = localStorage.getItem('app_token');
+    if (token) {
+      try {
+        await fetch("/api/user/profile", {
+           method: "PUT",
+           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+           body: JSON.stringify({ preferredCurrency: c })
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
   };
 
-  const setNotificationsEnabled = (b: boolean) => {
+  const setNotificationsEnabled = async (b: boolean) => {
+    if (b) {
+      if ('Notification' in window) {
+        if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+          const perm = await Notification.requestPermission();
+          if (perm !== 'granted') {
+             b = false;
+          }
+        } else if (Notification.permission === 'denied') {
+          b = false;
+        }
+      } else {
+        b = false; // Not supported
+      }
+    }
     setNotificationsEnabledState(b);
     localStorage.setItem('app_notifications', b ? 'true' : 'false');
   };
 
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
+    const applyTheme = () => {
+      root.classList.remove('light', 'dark');
+      if (theme === 'system') {
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        root.classList.add(systemTheme);
+      } else {
+        root.classList.add(theme);
+      }
+    };
 
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(theme);
-    }
+    applyTheme();
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => {
+      if (theme === 'system') applyTheme();
+    };
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
   }, [theme]);
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    if (!notificationsEnabled) return;
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success', force = false) => {
+    if (!notificationsEnabled && !force) return;
     const id = Date.now();
     setToasts((prev) => [...prev, { id, message, type }]);
+
+    if (notificationsEnabled || force) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+           new Notification('Smart Jamg\'arma', { body: message });
+        } catch (e) {
+           // iOS safari might require service worker for notifications, wrap in try-catch
+        }
+      }
+    }
+
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3000);
@@ -102,7 +150,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AppContext.Provider value={{
       theme, setTheme,
-      currency, setCurrency,
+      currency, setCurrency: setCurrencyAndSave,
       notificationsEnabled, setNotificationsEnabled,
       showToast, formatMoney,
       currencySymbol: CURRENCY_SYMBOLS[currency]
