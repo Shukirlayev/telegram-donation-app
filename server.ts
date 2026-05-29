@@ -63,6 +63,36 @@ if (BOT_TOKEN) {
     );
   });
 
+  bot.command('admin', async (ctx) => {
+    const adminIdStr = process.env.ADMIN_TELEGRAM_ID;
+    const tempPassword = "sarvar_admin";
+    const args = ctx.message.text.split(' ');
+
+    if ((adminIdStr && ctx.from.id.toString() === adminIdStr) || args[1] === tempPassword) {
+      const activeUsers = new Set(transactions.map(t => t.userId)).size;
+      const totalUsers = users.length;
+      const totalGoals = goals.length;
+      const activeGoals = goals.filter(g => !g.isArchived).length;
+      const totalTx = transactions.length;
+      
+      let totalSavingsUZS = 0;
+      goals.forEach(g => {
+         totalSavingsUZS += g.currentAmount;
+      });
+
+      const msg = `📊 *Admin Panel (Statistika)*\n\n` +
+        `👥 Jami foydalanuvchilar: ${totalUsers} ta\n` +
+        `🔥 Pul yig'ayotganlar (Aktiv): ${activeUsers} ta\n` +
+        `🎯 Jami maqsadlar: ${totalGoals} ta (${activeGoals} ta aktiv)\n` +
+        `💳 Jami tranzaksiyalar: ${totalTx} ta\n` +
+        `💰 Barcha yig'ilgan mablag': ${totalSavingsUZS.toLocaleString()} UZS`;
+
+      return ctx.reply(msg, { parse_mode: "Markdown" });
+    } else {
+      return; // Do nothing for unauthorized users to keep it hidden
+    }
+  });
+
   bot.on('text', async (ctx) => {
     const text = ctx.message.text.trim();
     const userId = ctx.from.id;
