@@ -1,6 +1,7 @@
 import { Goal, Transaction, UserProfile } from "../types";
-import { TrendingUp, Target, Plus, CheckCircle2, X, Edit2, Check, Trash2, PieChart as PieChartIcon } from "lucide-react";
+import { TrendingUp, Target, Plus, CheckCircle2, X, Edit2, Check, Trash2, ChevronRight, Wallet } from "lucide-react";
 import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 
 interface HomeProps {
   goals: Goal[];
@@ -65,83 +66,113 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+    <div className="space-y-10">
       {/* Goals Section */}
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-            <Target className="w-5 h-5 text-blue-500" />
-            Maqsadlar
-          </h2>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-display font-semibold text-slate-800 text-lg tracking-tight">Maqsadlar</h2>
           <button 
             onClick={() => setShowNewGoal(!showNewGoal)}
-            className="p-1.5 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-colors"
           >
-            {showNewGoal ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {showNewGoal ? <X className="w-4 h-4" /> : <><Plus className="w-4 h-4" /><span className="text-xs font-semibold">Qo'shish</span></>}
           </button>
         </div>
 
-        {showNewGoal && (
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-blue-100 mb-4 animate-in fade-in slide-in-from-top-4">
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">Yangi Kategoriya qo'shish</h3>
-            <div className="space-y-3">
-              <input type="text" placeholder="Kategoriya nomi (masalan: Noutbuk)" value={newGoalTitle} onChange={e => setNewGoalTitle(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500" />
-              <input type="number" placeholder="Maqsad summam (UZS)" value={newGoalTarget} onChange={e => setNewGoalTarget(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500" />
-              <button onClick={handleCreateGoal} disabled={savingGoal || !newGoalTitle || !newGoalTarget} className="w-full bg-blue-600 text-white font-medium rounded-lg py-2.5 text-sm disabled:opacity-50">
-                {savingGoal ? "Saqlanmoqda..." : "Kategoriya Qo'shish"}
-              </button>
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {showNewGoal && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0, scale: 0.95 }} 
+              animate={{ opacity: 1, height: 'auto', scale: 1 }} 
+              exit={{ opacity: 0, height: 0, scale: 0.95 }}
+              className="bg-white p-5 rounded-[1.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100 mb-6 overflow-hidden"
+            >
+              <h3 className="text-sm font-semibold text-slate-700 mb-4">Yangi Kategoriya</h3>
+              <div className="space-y-4">
+                <div>
+                   <label className="text-[10px] uppercase font-bold text-slate-400 mb-1 block tracking-wider">Nomi</label>
+                   <input type="text" placeholder="Masalan: Noutbuk" value={newGoalTitle} onChange={e => setNewGoalTitle(e.target.value)} className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium" />
+                </div>
+                <div>
+                   <label className="text-[10px] uppercase font-bold text-slate-400 mb-1 block tracking-wider">Maqsad summasi (UZS)</label>
+                   <input type="number" placeholder="5000000" value={newGoalTarget} onChange={e => setNewGoalTarget(e.target.value)} className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium" />
+                </div>
+                <button onClick={handleCreateGoal} disabled={savingGoal || !newGoalTitle || !newGoalTarget} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl py-3.5 text-sm transition-colors disabled:opacity-50 mt-2 shadow-[0_4px_12px_rgb(79,70,229,0.3)]">
+                  {savingGoal ? "Saqlanmoqda..." : "Saqlash"}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {goals.length === 0 ? (
-          <div className="bg-white p-6 rounded-2xl border border-dashed border-slate-200 text-center">
-            <p className="text-slate-500 text-sm">Hali hech qanday maqsad yoki kategoriya qo'shilmagan.</p>
-            <button onClick={() => setShowNewGoal(true)} className="mt-3 text-blue-600 text-sm font-medium flex items-center justify-center gap-1 mx-auto">
-              <Plus className="w-4 h-4" /> Kategoriya yaratish
-            </button>
+          <div className="bg-white p-8 rounded-[1.5rem] border border-dashed border-slate-200 text-center shadow-sm">
+            <Target className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500 font-medium text-sm">Hali maqsad qo'shilmagan.</p>
+            <p className="text-slate-400 text-xs mt-1">Pul yig'ishni boshlash uchun kategoriya unga qo'shing</p>
           </div>
         ) : (
-          <div className="grid gap-3 font-sans">
-            {goals.map(goal => {
-              const percent = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100).toFixed(1);
+          <div className="grid gap-4">
+            {goals.map((goal, index) => {
+              const percentRaw = (goal.currentAmount / goal.targetAmount) * 100;
+              const percent = Math.min(percentRaw, 100).toFixed(1);
               const isComplete = goal.currentAmount >= goal.targetAmount;
               const isEditing = editingGoalId === goal.id;
 
               return (
-                <div key={goal.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 relative group overflow-hidden">
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  key={goal.id} 
+                  className="bg-white p-5 rounded-[1.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/50 relative overflow-hidden group"
+                >
                   {isEditing ? (
-                    <div className="space-y-2">
-                       <input type="text" value={editGoalTitle} onChange={e => setEditGoalTitle(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-sm outline-none" />
-                       <input type="number" value={editGoalTarget} onChange={e => setEditGoalTarget(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-sm outline-none" />
-                       <div className="flex items-center gap-2 mt-2">
-                         <button onClick={() => handleSaveEdit(goal.id)} className="flex-1 bg-green-500 text-white text-xs font-semibold py-1.5 rounded-md"><Check className="w-4 h-4 mx-auto" /></button>
-                         <button onClick={() => setEditingGoalId(null)} className="flex-1 bg-slate-200 text-slate-700 text-xs font-semibold py-1.5 rounded-md"><X className="w-4 h-4 mx-auto" /></button>
+                    <div className="space-y-3 relative z-10">
+                       <input type="text" value={editGoalTitle} onChange={e => setEditGoalTitle(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none font-medium" />
+                       <input type="number" value={editGoalTarget} onChange={e => setEditGoalTarget(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none font-medium" />
+                       <div className="flex items-center gap-2 pt-2">
+                         <button onClick={() => handleSaveEdit(goal.id)} className="flex-1 bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider py-2.5 rounded-xl flex justify-center items-center gap-1 shadow-sm"><Check className="w-4 h-4" /> Saqlash</button>
+                         <button onClick={() => setEditingGoalId(null)} className="flex-1 bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider py-2.5 rounded-xl flex justify-center items-center gap-1"><X className="w-4 h-4" /> Bekor qilish</button>
                        </div>
                     </div>
                   ) : (
-                    <>
-                      <div className="flex items-start justify-between mb-2">
-                         <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-                           {goal.title}
-                           {isComplete && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-                         </h3>
-                         <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                           <button onClick={() => { setEditingGoalId(goal.id); setEditGoalTitle(goal.title); setEditGoalTarget(goal.targetAmount.toString()); }} className="p-1 text-slate-400 hover:text-blue-500"><Edit2 className="w-3.5 h-3.5" /></button>
-                           <button onClick={() => handleDeleteGoal(goal.id)} className="p-1 text-slate-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <div className="relative z-10">
+                      <div className="flex items-start justify-between mb-3">
+                         <div className="flex items-center gap-3">
+                           <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isComplete ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                              {isComplete ? <CheckCircle2 className="w-5 h-5" /> : <Target className="w-5 h-5" />}
+                           </div>
+                           <div>
+                             <h3 className="font-display font-semibold text-slate-800 text-base leading-tight">
+                               {goal.title}
+                             </h3>
+                             <p className="text-[11px] font-semibold text-slate-400 mt-0.5 tracking-wider uppercase">Maqsad: {goal.targetAmount.toLocaleString()}</p>
+                           </div>
+                         </div>
+                         <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-full">
+                           <button onClick={() => { setEditingGoalId(goal.id); setEditGoalTitle(goal.title); setEditGoalTarget(goal.targetAmount.toString()); }} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-full transition-all"><Edit2 className="w-3.5 h-3.5" /></button>
+                           <button onClick={() => handleDeleteGoal(goal.id)} className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-white rounded-full transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
                          </div>
                       </div>
-                      <p className="text-right text-sm">
-                         <span className="font-bold text-slate-800">{goal.currentAmount.toLocaleString()}</span>
-                         <span className="text-slate-400 text-xs"> / {goal.targetAmount.toLocaleString()}</span>
-                      </p>
-                      <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden mt-1">
-                        <div className={`h-full rounded-full ${isComplete ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${percent}%` }} />
+                      
+                      <div className="mt-4">
+                        <div className="flex justify-between items-end mb-2">
+                           <span className="font-display font-bold text-xl text-slate-800 tracking-tight">{goal.currentAmount.toLocaleString()} <span className="text-xs font-semibold text-slate-400">UZS</span></span>
+                           <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${isComplete ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{percent}%</span>
+                        </div>
+                        <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${percent}%` }}
+                            transition={{ duration: 1, ease: "easeOut" }}
+                            className={`h-full rounded-full ${isComplete ? 'bg-emerald-500' : 'bg-indigo-500'}`} 
+                          />
+                        </div>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1.5 text-right font-medium">{percent}% bajarildi</p>
-                    </>
+                    </div>
                   )}
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -150,35 +181,35 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
 
       {/* Transactions Section */}
       <section>
-        <div className="flex items-center gap-2 mb-4 text-slate-800">
-          <TrendingUp className="w-5 h-5 text-emerald-500" />
-          <h2 className="font-bold text-lg">Oxirgi Yozuvlar (Daromadlar)</h2>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-display font-semibold text-slate-800 text-lg tracking-tight">So'nggi harakatlar</h2>
         </div>
 
         {transactions.length === 0 ? (
-          <div className="bg-white p-5 rounded-2xl text-center border border-slate-100 shadow-sm">
-            <p className="text-slate-500 text-sm">Tranzaksiyalar mavjud emas.</p>
-            <p className="text-xs text-slate-400 mt-2">Botga o'tib, summamni yozing (masalan: 500 noutbuk).</p>
+          <div className="bg-white p-6 rounded-[1.5rem] text-center border border-slate-100/50 shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
+            <Wallet className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500 font-medium text-sm">Tranzaksiyalar mavjud emas.</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {transactions.map((t) => {
+          <div className="bg-white rounded-[1.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.02)] border border-slate-100/50 overflow-hidden">
+            {transactions.map((t, index) => {
               const associatedGoal = goals.find(g => g.id === t.goalId) || { title: 'Arxivlangan' };
+              const isLast = index === transactions.length - 1;
               return (
-                <div key={t.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-800 text-base">+{t.amount.toLocaleString()} <span className="text-xs font-medium text-slate-500">UZS</span></p>
-                    <div className="flex items-center gap-2 mt-1">
-                       <span className="bg-slate-100 text-slate-600 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md truncate">
-                         {associatedGoal.title}
-                       </span>
-                       <span className="text-slate-400 text-xs truncate">Bot orqali qo'shildi</span>
+                <div key={t.id} className={`p-4 flex items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors ${!isLast ? 'border-b border-slate-100' : ''}`}>
+                  <div className="flex items-center gap-3 w-full min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-emerald-50 flex flex-shrink-0 items-center justify-center">
+                       <TrendingUp className="w-5 h-5 text-emerald-500" />
                     </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
-                      {new Date(t.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-800 text-sm truncate">{associatedGoal.title}</p>
+                      <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+                        {new Date(t.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                       <p className="font-display font-bold text-emerald-600 text-sm">+{t.amount.toLocaleString()} <span className="text-[10px] font-semibold opacity-70">UZS</span></p>
+                    </div>
                   </div>
                 </div>
               )
