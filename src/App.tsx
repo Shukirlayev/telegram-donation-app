@@ -8,6 +8,7 @@ import { Loader2, AlertCircle, Home as HomeIcon, PieChart as PieChartIcon, User 
 import Home from "./components/Home";
 import Stats from "./components/Stats";
 import Profile from "./components/Profile";
+import { HomeSkeleton, StatsSkeleton, ProfileSkeleton } from "./components/Skeletons";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslation } from "./i18n";
 import { useAppContext } from "./contexts/AppContext";
@@ -172,8 +173,10 @@ export default function App() {
 
       <div className="px-4 mt-6 max-w-xl mx-auto relative z-10">
          {loadingData ? (
-           <div className="flex justify-center py-16">
-             <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+           <div className="py-2">
+             {activeTab === "home" && <HomeSkeleton />}
+             {activeTab === "stats" && <StatsSkeleton />}
+             {activeTab === "profile" && <ProfileSkeleton />}
            </div>
          ) : (
            <AnimatePresence mode="wait">
