@@ -2,18 +2,29 @@ import express from "express";
 import path from "path";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
-import { Telegraf } from "telegraf";
+import { Telegraf, Markup } from "telegraf";
 import { createServer as createViteServer } from "vite";
 import * as dotenv from "dotenv";
 
 dotenv.config();
 
 // In-memory simple database
-type Donation = {
+type Goal = {
   id: string;
   userId: number;
+  title: string;
+  targetAmount: number;
+  currentAmount: number;
+  color: string;
+  createdAt: string;
+};
+
+type Transaction = {
+  id: string;
+  userId: number;
+  goalId: string;
   amount: number;
-  description: string;
+  note: string;
   createdAt: string;
 };
 
@@ -26,7 +37,8 @@ type UserProfile = {
   displayName?: string;
 };
 
-const donations: Donation[] = [];
+const goals: Goal[] = [];
+const transactions: Transaction[] = [];
 const users: UserProfile[] = [];
 
 // Initialize Telegraf bot
@@ -39,30 +51,102 @@ if (BOT_TOKEN) {
   bot = new Telegraf(BOT_TOKEN);
 
   bot.start((ctx) => {
-    ctx.reply("Welcome to Donation Track Bot! Send me a message like '50000 noutbuk uchun' to register a donation, or open the Mini App to see your stats.");
+    ctx.reply(
+      "👋 Salom! Maqsadlar va tejashlar botiga xush kelibsiz.\n\n" +
+      "Avval *Mini App* orqali o'z maqsadingizni (kategoriyalarni) yarating. " +
+      "Keyin esa, menga summani yozib yuboring (masalan: `50000 noutbuk`).",
+      { parse_mode: "Markdown" }
+    );
   });
 
-  bot.on('text', (ctx) => {
+  bot.on('text', async (ctx) => {
     const text = ctx.message.text.trim();
-    // Parse format: "50000 noutbuk uchun"
-    const match = text.match(/^(\d+)\s+(.+)$/);
-    if (!match) {
-      return ctx.reply("Please use the format: <Amount> <Description> (e.g. '50000 noutbuk uchun')");
+    const userId = ctx.from.id;
+    
+    // Raqamni ajratib olish (summ)
+    const amountMatch = text.match(/\d+/);
+    if (!amountMatch) {
+      return ctx.reply("Iltimos, kiritmoqchi bo'lgan summangizni yozing (masalan: 50000 noutbuk).");
     }
 
-    const amount = parseInt(match[1], 10);
-    const description = match[2];
-    const userId = ctx.from.id;
+    const amount = parseInt(amountMatch[0], 10);
+    const note = text.replace(amountMatch[0], '').trim().toLowerCase();
 
-    donations.push({
+    const userGoals = goals.filter(g => g.userId === userId);
+
+    if (userGoals.length === 0) {
+      return ctx.reply("Sizda hali maqsadlar yo'q! 🎯\nIltimos, avval Mini App orqali yangi maqsad (kategoriya) qo'shing.");
+    }
+
+    // Try fuzzy match
+    let matchedGoal = null;
+    if (note.length > 2) {
+      const cleanNote = note.replace('uchun', '').replace('ga', '').trim();
+      matchedGoal = userGoals.find(g => 
+        cleanNote.includes(g.title.toLowerCase()) || 
+        g.title.toLowerCase().includes(cleanNote)
+      );
+    }
+
+    if (matchedGoal) {
+      // Auto add exactly to matched goal
+      matchedGoal.currentAmount += amount;
+      transactions.push({
+        id: crypto.randomUUID(),
+        userId,
+        goalId: matchedGoal.id,
+        amount,
+        note: text,
+        createdAt: new Date().toISOString(),
+      });
+      return ctx.reply(
+        `✅ ${amount.toLocaleString()} UZS "${matchedGoal.title}" maqsadiga qo'shildi!\n\n` +
+        `Jami yig'ildi: ${matchedGoal.currentAmount.toLocaleString()} / ${matchedGoal.targetAmount ? matchedGoal.targetAmount.toLocaleString() : 'N/A'} UZS`
+      );
+    }
+
+    // If no direct match, show inline keyboard for selection
+    const buttons = userGoals.map(g => {
+      // Create callback payload: max 64 bytes
+      // "add_金额_id" e.g., "add_50000_12345678-..."
+      const payload = `add_${amount}_${g.id}`;
+      return [Markup.button.callback(g.title, payload)];
+    });
+
+    return ctx.reply(
+      `💳 ${amount.toLocaleString()} UZS yozildi.\nQaysi maqsad (kategoriya) uchun qo'shamiz?`, 
+      Markup.inlineKeyboard(buttons)
+    );
+  });
+
+  bot.action(/^add_(\d+)_([A-Za-z0-9\-]+)$/, async (ctx) => {
+    const amount = parseInt(ctx.match[1], 10);
+    const goalId = ctx.match[2];
+    const userId = ctx.from?.id;
+
+    if (!userId) return;
+
+    const goal = goals.find(g => g.id === goalId && g.userId === userId);
+    if (!goal) {
+      return ctx.answerCbQuery("❌ Kechirasiz, maqsad topilmadi.");
+    }
+
+    // Process transaction
+    goal.currentAmount += amount;
+    transactions.push({
       id: crypto.randomUUID(),
       userId,
+      goalId: goal.id,
       amount,
-      description,
+      note: 'Bot orqali tanlandi',
       createdAt: new Date().toISOString(),
     });
 
-    ctx.reply(`✅ Successfully saved donation of ${amount} for "${description}".`);
+    await ctx.answerCbQuery("✅ Saqlandi!");
+    await ctx.editMessageText(
+      `✅ ${amount.toLocaleString()} UZS "${goal.title}" maqsadiga qo'shildi!\n\n` +
+      `Jami yig'ildi: ${goal.currentAmount.toLocaleString()} / ${goal.targetAmount ? goal.targetAmount.toLocaleString() : 'N/A'} UZS`
+    );
   });
 
   bot.launch().catch(console.error);
@@ -102,7 +186,6 @@ async function startServer() {
 
       // Sort keys alphabetically
       const keys = Array.from(urlParams.keys()).sort();
-      // Create data check string
       const dataCheckString = keys.map(k => `${k}=${urlParams.get(k)}`).join("\n");
 
       // Verify HMAC-SHA256
@@ -122,7 +205,6 @@ async function startServer() {
 
       const user = JSON.parse(userStr);
       
-      // Update or create user profile
       let userProfile = users.find(u => u.userId === user.id);
       if (!userProfile) {
         userProfile = {
@@ -131,20 +213,17 @@ async function startServer() {
           telegramFirstName: user.first_name,
           telegramLastName: user.last_name,
           telegramPhotoUrl: user.photo_url,
-          displayName: user.first_name || user.username || "User",
+          displayName: user.first_name || user.username || "Foydalanuvchi",
         };
         users.push(userProfile);
       } else {
-        // Update details in case they changed on Telegram's side
         userProfile.telegramUsername = user.username;
         userProfile.telegramFirstName = user.first_name;
         userProfile.telegramLastName = user.last_name;
         userProfile.telegramPhotoUrl = user.photo_url;
       }
 
-      // Issue a JWT session token for the user
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "24h" });
-      
       res.json({ token, userId: user.id });
     } catch (err) {
       console.error(err);
@@ -152,7 +231,6 @@ async function startServer() {
     }
   });
 
-  // Verify JWT Middleware
   const authMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -170,28 +248,47 @@ async function startServer() {
     });
   };
 
-  // 2. Fetch donations (Protected)
-  app.get("/api/donations", authMiddleware, (req, res) => {
+  // 2. Main data endpoint: returns goals and recent transactions
+  app.get("/api/data", authMiddleware, (req, res) => {
     const userId = (req as any).user.userId;
-    const userDonations = donations.filter(d => d.userId === userId);
-    
-    // Reverse sort by time (latest first)
-    userDonations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-    res.json({ donations: userDonations });
-  });
-
-  // 3. Get user profile
-  app.get("/api/user/profile", authMiddleware, (req, res) => {
-    const userId = (req as any).user.userId;
+    const userGoals = goals.filter(g => g.userId === userId);
+    const userTransactions = transactions.filter(t => t.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 50); // top 50 recent transactions
+      
     const userProfile = users.find(u => u.userId === userId);
-    if (!userProfile) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    res.json({ profile: userProfile });
+
+    res.json({ 
+      goals: userGoals, 
+      transactions: userTransactions,
+      profile: userProfile
+    });
   });
 
-  // 4. Update display name
+  // 3. Create Goal
+  app.post("/api/goals", authMiddleware, (req, res) => {
+    const userId = (req as any).user.userId;
+    const { title, targetAmount, color } = req.body;
+
+    if (!title || !targetAmount) {
+      return res.status(400).json({ error: "Missing title or target amount" });
+    }
+
+    const newGoal: Goal = {
+      id: crypto.randomUUID(),
+      userId,
+      title,
+      targetAmount: parseInt(targetAmount, 10),
+      currentAmount: 0,
+      color: color || "#3b82f6",
+      createdAt: new Date().toISOString()
+    };
+
+    goals.push(newGoal);
+    res.json(newGoal);
+  });
+
+  // 4. Update Profile
   app.put("/api/user/profile", authMiddleware, (req, res) => {
     const userId = (req as any).user.userId;
     const { displayName } = req.body;
@@ -205,7 +302,6 @@ async function startServer() {
     res.json({ profile: userProfile });
   });
 
-  // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },

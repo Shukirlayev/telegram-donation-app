@@ -7,11 +7,22 @@ export interface UserProfile {
   displayName?: string;
 }
 
-export interface Donation {
+export interface Goal {
   id: string;
   userId: number;
+  title: string;
+  targetAmount: number;
+  currentAmount: number;
+  color: string;
+  createdAt: string;
+}
+
+export interface Transaction {
+  id: string;
+  userId: number;
+  goalId: string;
   amount: number;
-  description: string;
+  note: string;
   createdAt: string;
 }
 
@@ -19,3 +30,4 @@ export interface AuthResponse {
   token: string;
   userId: number;
 }
+
