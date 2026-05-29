@@ -2,6 +2,7 @@ import { Goal, Transaction, UserProfile } from "../types";
 import { TrendingUp, Target, Plus, CheckCircle2, X, Edit2, Check, Trash2, ChevronRight, Wallet, Award, Flame, Bot, CalendarDays } from "lucide-react";
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { useTranslation } from "../i18n";
 
 interface HomeProps {
   goals: Goal[];
@@ -22,6 +23,8 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
   const [editGoalTitle, setEditGoalTitle] = useState("");
   const [editGoalTarget, setEditGoalTarget] = useState("");
   const [editGoalDeadline, setEditGoalDeadline] = useState("");
+  
+  const { t } = useTranslation();
 
   const streakDays = useMemo(() => {
     if (!transactions.length) return 0;
@@ -94,8 +97,8 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                  <Award className="w-6 h-6" />
               </div>
               <div className="z-10">
-                 <p className="text-slate-800 text-[15px] font-bold leading-tight">Millioner!</p>
-                 <p className="text-slate-500 text-[12px] font-medium mt-0.5 leading-snug">1M+ UZS yig'ildi</p>
+                 <p className="text-slate-800 text-[15px] font-bold leading-tight">{t("home.millionaire")}</p>
+                 <p className="text-slate-500 text-[12px] font-medium mt-0.5 leading-snug">{t("home.millionSaved")}</p>
               </div>
            </motion.div>
          )}
@@ -106,8 +109,8 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                <Flame className="w-6 h-6" />
             </div>
             <div className="z-10">
-               <p className="text-slate-800 text-[15px] font-bold leading-tight">{streakDays} Kun</p>
-               <p className="text-slate-500 text-[12px] font-medium mt-0.5 leading-snug">Faol seriya</p>
+               <p className="text-slate-800 text-[15px] font-bold leading-tight">{streakDays} {t("home.streak")}</p>
+               <p className="text-slate-500 text-[12px] font-medium mt-0.5 leading-snug">{t("home.activeStreak")}</p>
             </div>
          </div>
          
@@ -117,7 +120,7 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                <Bot className="w-6 h-6" />
             </div>
             <div className="z-10">
-               <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-0.5">Moliya AI</p>
+               <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-0.5">{t("home.aiConsult")}</p>
                <p className="text-slate-700 text-[12px] font-medium leading-tight line-clamp-2">{aiMessage}</p>
             </div>
          </div>
@@ -126,12 +129,12 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
       {/* Goals Section */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display font-semibold text-slate-800 text-[19px] tracking-tight">Maqsadlar</h2>
+          <h2 className="font-display font-semibold text-slate-800 text-[19px] tracking-tight">{t("home.goals")}</h2>
           <button 
             onClick={() => setShowNewGoal(!showNewGoal)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200/50 text-slate-600 rounded-full hover:bg-slate-200 transition-colors"
           >
-            {showNewGoal ? <X className="w-4 h-4" /> : <><Plus className="w-4 h-4" /><span className="text-xs font-semibold">Qo'shish</span></>}
+            {showNewGoal ? <X className="w-4 h-4" /> : <><Plus className="w-4 h-4" /><span className="text-xs font-semibold">{t("home.add")}</span></>}
           </button>
         </div>
 
@@ -143,26 +146,39 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
               exit={{ opacity: 0, height: 0, scale: 0.95 }}
               className="bg-white/70 backdrop-blur-xl p-5 rounded-[1.5rem] shadow-sm border border-white/60 mb-5 overflow-hidden"
             >
-              <h3 className="text-[15px] font-bold text-slate-800 mb-4 tracking-tight">Yangi Kategoriya</h3>
+              <h3 className="text-[15px] font-bold text-slate-800 mb-4 tracking-tight">{t("home.newCategory")}</h3>
               <div className="space-y-4">
-                <div className="space-y-3 bg-white/40 p-1 rounded-xl">
-                   <div className="border border-slate-200 bg-white rounded-xl overflow-hidden focus-within:ring-2 ring-indigo-500/20 focus-within:border-indigo-400 transition-all">
-                     <div className="px-3 py-1.5 border-b border-slate-100 flex items-center">
-                        <label className="text-[11px] font-semibold text-slate-500 w-24">Nomi</label>
-                        <input type="text" placeholder="Masalan: Noutbuk" value={newGoalTitle} onChange={e => setNewGoalTitle(e.target.value)} className="w-full bg-transparent border-0 px-1 py-1.5 text-sm outline-none font-medium placeholder-slate-300" />
-                     </div>
-                     <div className="px-3 py-1.5 border-b border-slate-100 flex items-center">
-                        <label className="text-[11px] font-semibold text-slate-500 w-24">Summa (UZS)</label>
-                        <input type="number" placeholder="5000000" value={newGoalTarget} onChange={e => setNewGoalTarget(e.target.value)} className="w-full bg-transparent border-0 px-1 py-1.5 text-sm outline-none font-medium placeholder-slate-300" />
-                     </div>
-                     <div className="px-3 py-1.5 flex items-center">
-                        <label className="text-[11px] font-semibold text-slate-500 w-24">Muddat</label>
-                        <input type="date" value={newGoalDeadline} onChange={e => setNewGoalDeadline(e.target.value)} className="w-full bg-transparent border-0 px-1 py-1.5 text-sm outline-none font-medium text-slate-600" />
-                     </div>
-                   </div>
+                <div>
+                  <label className="text-[11px] uppercase font-bold text-slate-500 tracking-wider mb-1.5 block">{t('home.name')}</label>
+                  <input 
+                    type="text" 
+                    placeholder={t('home.namePlaceholder')} 
+                    value={newGoalTitle} 
+                    onChange={e => setNewGoalTitle(e.target.value)} 
+                    className="w-full bg-white/80 backdrop-blur-sm border border-white/80 shadow-sm rounded-xl px-4 py-3 text-[15px] outline-none focus:border-indigo-400 focus:bg-white transition-all font-medium text-slate-800 placeholder-slate-400 caret-indigo-500" 
+                  />
                 </div>
-                <button onClick={handleCreateGoal} disabled={savingGoal || !newGoalTitle || !newGoalTarget} className="w-full bg-indigo-600 active:scale-[0.98] hover:bg-indigo-700 text-white font-semibold rounded-xl py-3.5 text-[15px] transition-all disabled:opacity-50 mt-1">
-                  {savingGoal ? "Saqlanmoqda..." : "Saqlash"}
+                <div>
+                  <label className="text-[11px] uppercase font-bold text-slate-500 tracking-wider mb-1.5 block">{t('home.amount')}</label>
+                  <input 
+                    type="number" 
+                    placeholder="5000000" 
+                    value={newGoalTarget} 
+                    onChange={e => setNewGoalTarget(e.target.value)} 
+                    className="w-full bg-white/80 backdrop-blur-sm border border-white/80 shadow-sm rounded-xl px-4 py-3 text-[15px] outline-none focus:border-indigo-400 focus:bg-white transition-all font-medium text-slate-800 placeholder-slate-400 caret-indigo-500" 
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] uppercase font-bold text-slate-500 tracking-wider mb-1.5 block">{t('home.deadline')}</label>
+                  <input 
+                    type="date" 
+                    value={newGoalDeadline} 
+                    onChange={e => setNewGoalDeadline(e.target.value)} 
+                    className="w-full bg-white/80 backdrop-blur-sm border border-white/80 shadow-sm rounded-xl px-4 py-3 text-[15px] outline-none focus:border-indigo-400 focus:bg-white transition-all font-medium text-slate-700 caret-indigo-500" 
+                  />
+                </div>
+                <button onClick={handleCreateGoal} disabled={savingGoal || !newGoalTitle || !newGoalTarget} className="w-full bg-indigo-600 active:scale-[0.98] hover:bg-indigo-700 text-white font-semibold rounded-xl py-3.5 text-[15px] transition-all disabled:opacity-50 mt-2 shadow-sm">
+                  {savingGoal ? t("home.saving") : t("home.save")}
                 </button>
               </div>
             </motion.div>
@@ -172,8 +188,8 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
         {goals.length === 0 ? (
           <div className="bg-white/60 backdrop-blur-xl p-8 rounded-[1.5rem] border border-white/60 text-center shadow-sm">
             <Target className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-            <p className="text-slate-700 font-medium text-[15px]">Hali maqsad qo'shilmagan.</p>
-            <p className="text-slate-500 text-[13px] mt-1">Pul yig'ishni boshlash uchun kategoriya yaratib uni tanlang</p>
+            <p className="text-slate-700 font-medium text-[15px]">{t("home.noGoalsTitle")}</p>
+            <p className="text-slate-500 text-[13px] mt-1">{t("home.noGoalsDesc")}</p>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -203,12 +219,12 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                 >
                   {isEditing ? (
                     <div className="space-y-3 relative z-10 bg-white/40 p-2.5 rounded-2xl border border-white/50">
-                       <input type="text" value={editGoalTitle} onChange={e => setEditGoalTitle(e.target.value)} className="w-full bg-white/80 border border-white/80 rounded-xl px-3 py-2.5 text-sm outline-none font-medium shadow-sm transition-all focus:border-indigo-400 focus:bg-white" />
-                       <input type="number" value={editGoalTarget} onChange={e => setEditGoalTarget(e.target.value)} className="w-full bg-white/80 border border-white/80 rounded-xl px-3 py-2.5 text-sm outline-none font-medium shadow-sm transition-all focus:border-indigo-400 focus:bg-white" />
-                       <input type="date" value={editGoalDeadline} onChange={e => setEditGoalDeadline(e.target.value)} className="w-full bg-white/80 border border-white/80 rounded-xl px-3 py-2.5 text-sm outline-none font-medium text-slate-600 shadow-sm transition-all focus:border-indigo-400 focus:bg-white" />
+                       <input type="text" value={editGoalTitle} onChange={e => setEditGoalTitle(e.target.value)} className="w-full bg-white/80 border border-white/80 rounded-xl px-3 py-2.5 text-sm outline-none font-medium shadow-sm transition-all focus:border-indigo-400 focus:bg-white caret-indigo-500" />
+                       <input type="number" value={editGoalTarget} onChange={e => setEditGoalTarget(e.target.value)} className="w-full bg-white/80 border border-white/80 rounded-xl px-3 py-2.5 text-sm outline-none font-medium shadow-sm transition-all focus:border-indigo-400 focus:bg-white caret-indigo-500" />
+                       <input type="date" value={editGoalDeadline} onChange={e => setEditGoalDeadline(e.target.value)} className="w-full bg-white/80 border border-white/80 rounded-xl px-3 py-2.5 text-sm outline-none font-medium text-slate-600 shadow-sm transition-all focus:border-indigo-400 focus:bg-white caret-indigo-500" />
                        <div className="flex items-center gap-2 pt-1">
-                         <button onClick={() => handleSaveEdit(goal.id)} className="flex-1 bg-slate-800 text-white text-[13px] font-semibold py-2.5 rounded-xl flex justify-center items-center gap-1.5 shadow-sm active:scale-95 transition-transform">Saqlash</button>
-                         <button onClick={() => setEditingGoalId(null)} className="flex-1 bg-slate-200 text-slate-700 text-[13px] font-semibold py-2.5 rounded-xl flex justify-center items-center gap-1.5 active:scale-95 transition-transform">Bekor</button>
+                         <button onClick={() => handleSaveEdit(goal.id)} className="flex-1 bg-slate-800 text-white text-[13px] font-semibold py-2.5 rounded-xl flex justify-center items-center gap-1.5 shadow-sm active:scale-95 transition-transform">{t("home.save")}</button>
+                         <button onClick={() => setEditingGoalId(null)} className="flex-1 bg-slate-200 text-slate-700 text-[13px] font-semibold py-2.5 rounded-xl flex justify-center items-center gap-1.5 active:scale-95 transition-transform">{t("home.cancel")}</button>
                        </div>
                     </div>
                   ) : (
@@ -222,7 +238,7 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                              <h3 className="font-display font-semibold text-slate-800 text-[17px] leading-tight truncate">
                                {goal.title}
                              </h3>
-                             <p className="text-[12px] font-medium text-slate-500 mt-0.5 truncate tracking-wide">Maqsad: {goal.targetAmount.toLocaleString()}</p>
+                             <p className="text-[12px] font-medium text-slate-500 mt-0.5 truncate tracking-wide">{t("home.target")} {goal.targetAmount.toLocaleString()}</p>
                            </div>
                          </div>
                          <div className="flex items-center gap-1">
@@ -238,11 +254,11 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                                <CalendarDays className="w-3.5 h-3.5 text-slate-500" />
                              </div>
                              <span className="text-[13px] font-medium text-slate-600">
-                               {daysLeft > 0 ? (isComplete ? "Muddat tugallandi" : `${daysLeft} kun qoldi`) : "Muddat o'tdi"}
+                               {daysLeft > 0 ? (isComplete ? t("home.deadlineEnd") : `${daysLeft} ${t("home.daysLeft")}`) : t("home.deadlinePassed")}
                              </span>
                            </div>
                            {dailyRequired && dailyRequired > 0 && (
-                             <span className="text-[11px] font-bold text-slate-700">~{Math.round(dailyRequired).toLocaleString()} UZS / kun</span>
+                             <span className="text-[11px] font-bold text-slate-700">~{Math.round(dailyRequired).toLocaleString()} {t("home.perDay")}</span>
                            )}
                         </div>
                       )}
@@ -273,21 +289,21 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
       {/* Transactions Section */}
       <section>
         <div className="flex items-center justify-between mb-4 mt-2">
-          <h2 className="font-display font-semibold text-slate-800 text-[19px] tracking-tight">So'nggi harakatlar</h2>
+          <h2 className="font-display font-semibold text-slate-800 text-[19px] tracking-tight">{t("home.recentActivity")}</h2>
         </div>
 
         {transactions.length === 0 ? (
           <div className="bg-white/60 backdrop-blur-xl p-6 rounded-[1.5rem] text-center border border-white/60 shadow-sm">
             <Wallet className="w-8 h-8 text-slate-400 mx-auto mb-3" />
-            <p className="text-slate-600 font-medium text-[15px]">Harakatlar mavjud emas.</p>
+            <p className="text-slate-600 font-medium text-[15px]">{t("home.noActivity")}</p>
           </div>
         ) : (
           <div className="bg-white/70 backdrop-blur-xl rounded-[1.5rem] shadow-sm border border-white/60 overflow-hidden">
-            {transactions.slice().reverse().slice(0, 10).map((t, index) => {
-              const associatedGoal = goals.find(g => g.id === t.goalId) || { title: 'Arxivlangan' };
+            {transactions.slice().reverse().slice(0, 10).map((tItem, index) => {
+              const associatedGoal = goals.find(g => g.id === tItem.goalId) || { title: t("home.archived") };
               const isLast = index === Math.min(transactions.length, 10) - 1;
               return (
-                <div key={t.id} className={`p-4 flex items-center justify-between gap-4 transition-colors ${!isLast ? 'border-b border-black/5' : ''}`}>
+                <div key={tItem.id} className={`p-4 flex items-center justify-between gap-4 transition-colors ${!isLast ? 'border-b border-black/5' : ''}`}>
                   <div className="flex items-center gap-3.5 w-full min-w-0">
                     <div className="w-[42px] h-[42px] rounded-full bg-white/60 flex flex-shrink-0 items-center justify-center border border-white/50 shadow-sm">
                        <TrendingUp className="w-5 h-5 text-slate-600" />
@@ -295,16 +311,16 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-800 text-[16px] truncate">{associatedGoal.title}</p>
                       <p className="text-[12px] text-slate-500 font-medium mt-0.5 truncate tracking-wide">
-                        {new Date(t.createdAt).toLocaleDateString('uz-UZ', { month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
+                        {new Date(tItem.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                       <p className="font-display font-semibold text-slate-800 text-[16px]">+{t.amount.toLocaleString()}</p>
+                       <p className="font-display font-semibold text-slate-800 text-[16px]">+{tItem.amount.toLocaleString()}</p>
                        <p className="text-[10px] uppercase font-bold text-slate-400 mt-1">UZS</p>
                     </div>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         )}

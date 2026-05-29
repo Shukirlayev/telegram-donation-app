@@ -9,6 +9,7 @@ import Home from "./components/Home";
 import Stats from "./components/Stats";
 import Profile from "./components/Profile";
 import { AnimatePresence, motion } from "motion/react";
+import { useTranslation } from "./i18n";
 
 declare global {
   interface Window {
@@ -19,6 +20,7 @@ declare global {
 }
 
 export default function App() {
+  const { t } = useTranslation();
   const [token, setToken] = useState<string | null>(null);
   const [loadingText, setLoadingText] = useState<string>("Boshlanmoqda...");
   const [error, setError] = useState<string | null>(null);
@@ -114,9 +116,10 @@ export default function App() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Xayrli tong";
-    if (hour < 18) return "Xayrli kun";
-    return "Xayrli kech";
+    if (hour < 12) return t("greeting.morning");
+    if (hour < 18) return t("greeting.day");
+    if (hour < 22) return t("greeting.evening");
+    return t("greeting.night");
   };
 
   return (
@@ -132,7 +135,7 @@ export default function App() {
             <div>
               <p className="text-slate-400 text-[13px] font-medium mb-0.5">{getGreeting()},</p>
               <h1 className="text-2xl font-display font-semibold text-white tracking-tight truncate max-w-[200px]">
-                {profile?.displayName || profile?.telegramFirstName || "Foydalanuvchi"}
+                {profile?.displayName || profile?.telegramFirstName || t("header.user")}
               </h1>
             </div>
             {profile?.telegramPhotoUrl ? (
@@ -146,7 +149,7 @@ export default function App() {
 
           <div className="mt-2">
              <p className="text-slate-400 text-[11px] font-semibold uppercase tracking-wider mb-1 flex items-center gap-2">
-               {activeTab === "home" ? "Jami Yig'ildi" : activeTab === "stats" ? "Statistika" : "Profil sozlamalari"}
+               {activeTab === "home" ? t("header.totalSaved") : activeTab === "stats" ? t("header.stats") : t("header.profile")}
              </p>
              <motion.div 
                key={totalSaved}
@@ -185,12 +188,11 @@ export default function App() {
          )}
       </div>
 
-      {/* Floating Bottom Navigation (Glassmorphism Pill) */}
-      <div className="fixed bottom-6 left-0 right-0 flex justify-center z-50 pointer-events-none px-4">
-        <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.08)] px-2 py-2 rounded-full flex justify-between items-center gap-1 pointer-events-auto max-w-[320px] w-full">
-           <NavItem icon={HomeIcon} label="Asosiy" isActive={activeTab === "home"} onClick={() => setActiveTab("home")} />
-           <NavItem icon={PieChartIcon} label="Statistika" isActive={activeTab === "stats"} onClick={() => setActiveTab("stats")} />
-           <NavItem icon={UserIcon} label="Profil" isActive={activeTab === "profile"} onClick={() => setActiveTab("profile")} />
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-2xl border-t border-white/50 pb-safe pt-2 px-6 shadow-[0_-4px_20px_rgb(0,0,0,0.02)]">
+        <div className="flex justify-around items-center max-w-md mx-auto pb-4 pt-1">
+           <NavItem icon={HomeIcon} label={t("nav.home")} isActive={activeTab === "home"} onClick={() => setActiveTab("home")} />
+           <NavItem icon={PieChartIcon} label={t("nav.stats")} isActive={activeTab === "stats"} onClick={() => setActiveTab("stats")} />
+           <NavItem icon={UserIcon} label={t("nav.profile")} isActive={activeTab === "profile"} onClick={() => setActiveTab("profile")} />
         </div>
       </div>
     </div>
@@ -201,20 +203,12 @@ function NavItem({ icon: Icon, label, isActive, onClick }: { icon: any, label: s
   return (
     <button 
       onClick={onClick} 
-      className={`relative flex items-center justify-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300 ${
-        isActive ? "text-indigo-600 bg-white/60 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/30"
+      className={`flex flex-col items-center justify-center gap-1 w-[72px] transition-colors duration-200 ${
+        isActive ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
       }`}
     >
-      <Icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
-      {isActive && (
-        <motion.span 
-          initial={{ opacity: 0, width: 0 }} 
-          animate={{ opacity: 1, width: 'auto' }} 
-          className="text-[13px] font-semibold overflow-hidden whitespace-nowrap"
-        >
-          {label}
-        </motion.span>
-      )}
+      <Icon className={`w-6 h-6 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
+      <span className="text-[10px] font-semibold tracking-wide">{label}</span>
     </button>
   );
 }
