@@ -15,6 +15,7 @@ export interface Goal {
   currentAmount: number;
   color: string;
   createdAt: string;
+  deadline?: string;
   isArchived?: boolean;
 }
 

@@ -1,6 +1,6 @@
 import { Goal, Transaction, UserProfile } from "../types";
-import { TrendingUp, Target, Plus, CheckCircle2, X, Edit2, Check, Trash2, ChevronRight, Wallet } from "lucide-react";
-import { useState } from "react";
+import { TrendingUp, Target, Plus, CheckCircle2, X, Edit2, Check, Trash2, ChevronRight, Wallet, Award, Flame, Bot, CalendarDays } from "lucide-react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface HomeProps {
@@ -15,11 +15,28 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
   const [showNewGoal, setShowNewGoal] = useState(false);
   const [newGoalTitle, setNewGoalTitle] = useState("");
   const [newGoalTarget, setNewGoalTarget] = useState("");
+  const [newGoalDeadline, setNewGoalDeadline] = useState("");
   const [savingGoal, setSavingGoal] = useState(false);
   
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [editGoalTitle, setEditGoalTitle] = useState("");
   const [editGoalTarget, setEditGoalTarget] = useState("");
+  const [editGoalDeadline, setEditGoalDeadline] = useState("");
+
+  const streakDays = useMemo(() => {
+    if (!transactions.length) return 0;
+    const dates = new Set(transactions.map(t => new Date(t.createdAt).toDateString()));
+    return dates.size;
+  }, [transactions]);
+  
+  const hasMillionBadge = totalSaved >= 1000000;
+  
+  const aiMessage = useMemo(() => {
+    if (goals.length === 0) return "Sizda hali maqsadlar yo'q. Birinchi maqsadingizni yarating!";
+    if (totalSaved === 0) return "Ajoyib boshlanish! Maqsad yaratibsiz, endi unga bot orqali pul ajrating.";
+    if (hasMillionBadge) return "Siz 1 Million UZS dan ortiq mablag' yig'ishga muvaffaq bo'ldingiz! Ajoyib natija, shu ruhda davom eting! 🔥";
+    return `Siz umumiy hisobda ${totalSaved.toLocaleString()} UZS yig'dingiz. Rejali tejashni davom ettirsangiz, barchasiga tezda erishasiz.`;
+  }, [goals, totalSaved, hasMillionBadge]);
 
   const handleCreateGoal = async () => {
     if (!token || !newGoalTitle.trim() || !newGoalTarget.trim()) return;
@@ -31,11 +48,12 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
         body: JSON.stringify({ 
           title: newGoalTitle.trim(), 
           targetAmount: newGoalTarget,
+          deadline: newGoalDeadline || undefined,
           color: "#" + Math.floor(Math.random()*16777215).toString(16)
         })
       });
       if (res.ok) {
-        setNewGoalTitle(""); setNewGoalTarget(""); setShowNewGoal(false);
+        setNewGoalTitle(""); setNewGoalTarget(""); setNewGoalDeadline(""); setShowNewGoal(false);
         onRefresh();
       }
     } catch (err) { console.error(err); } 
@@ -47,7 +65,7 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
       await fetch(`/api/goals/${goalId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ title: editGoalTitle, targetAmount: editGoalTarget })
+        body: JSON.stringify({ title: editGoalTitle, targetAmount: editGoalTarget, deadline: editGoalDeadline || undefined })
       });
       setEditingGoalId(null);
       onRefresh();
@@ -67,6 +85,41 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
 
   return (
     <div className="space-y-10">
+      {/* Gamification & AI Section */}
+      <section className="flex gap-4 overflow-x-auto pb-2 -mx-5 px-5 snap-x hide-scrollbar">
+         {hasMillionBadge && (
+           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex-shrink-0 snap-center bg-gradient-to-br from-amber-200 to-orange-400 p-4 rounded-[1.5rem] shadow-sm flex items-center gap-3 w-64">
+              <div className="bg-white/30 backdrop-blur-sm p-2 rounded-full">
+                 <Award className="w-8 h-8 text-white drop-shadow-md" />
+              </div>
+              <div>
+                 <p className="text-white text-sm font-bold leading-tight drop-shadow-sm">Millioner!</p>
+                 <p className="text-amber-50 text-[11px] font-medium mt-0.5 leading-snug">Jami 1M+ UZS yig'dingiz</p>
+              </div>
+           </motion.div>
+         )}
+         
+         <div className="flex-shrink-0 snap-center bg-gradient-to-br from-rose-400 to-pink-500 p-4 rounded-[1.5rem] shadow-sm flex items-center gap-3 w-64">
+            <div className="bg-white/30 backdrop-blur-sm p-2 rounded-full">
+               <Flame className="w-8 h-8 text-white drop-shadow-md" />
+            </div>
+            <div>
+               <p className="text-white text-sm font-bold leading-tight drop-shadow-sm">{streakDays} Kun</p>
+               <p className="text-rose-50 text-[11px] font-medium mt-0.5 leading-snug">Faol moliya seriyasi</p>
+            </div>
+         </div>
+         
+         <div className="flex-shrink-0 snap-center bg-gradient-to-br from-sky-400 to-indigo-500 p-4 rounded-[1.5rem] shadow-sm flex items-center gap-3 w-[280px]">
+            <div className="bg-white/30 backdrop-blur-sm p-2 rounded-full shrink-0">
+               <Bot className="w-8 h-8 text-white drop-shadow-md" />
+            </div>
+            <div>
+               <p className="text-white text-[11px] font-bold uppercase tracking-wider opacity-90 drop-shadow-sm">AI Maslahat</p>
+               <p className="text-sky-50 text-[12px] font-medium mt-0.5 leading-tight line-clamp-2">{aiMessage}</p>
+            </div>
+         </div>
+      </section>
+
       {/* Goals Section */}
       <section>
         <div className="flex items-center justify-between mb-5">
@@ -97,6 +150,10 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                    <label className="text-[10px] uppercase font-bold text-slate-400 mb-1 block tracking-wider">Maqsad summasi (UZS)</label>
                    <input type="number" placeholder="5000000" value={newGoalTarget} onChange={e => setNewGoalTarget(e.target.value)} className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium" />
                 </div>
+                <div>
+                   <label className="text-[10px] uppercase font-bold text-slate-400 mb-1 block tracking-wider">Muddat (Ixtiyoriy)</label>
+                   <input type="date" value={newGoalDeadline} onChange={e => setNewGoalDeadline(e.target.value)} className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-600" />
+                </div>
                 <button onClick={handleCreateGoal} disabled={savingGoal || !newGoalTitle || !newGoalTarget} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl py-3.5 text-sm transition-colors disabled:opacity-50 mt-2 shadow-[0_4px_12px_rgb(79,70,229,0.3)]">
                   {savingGoal ? "Saqlanmoqda..." : "Saqlash"}
                 </button>
@@ -118,6 +175,16 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
               const percent = Math.min(percentRaw, 100).toFixed(1);
               const isComplete = goal.currentAmount >= goal.targetAmount;
               const isEditing = editingGoalId === goal.id;
+              
+              let daysLeft = null;
+              let dailyRequired = null;
+              if (goal.deadline) {
+                 const diffTime = new Date(goal.deadline).getTime() - new Date().getTime();
+                 daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                 if (daysLeft > 0 && !isComplete) {
+                   dailyRequired = (goal.targetAmount - goal.currentAmount) / daysLeft;
+                 }
+              }
 
               return (
                 <motion.div 
@@ -131,6 +198,7 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                     <div className="space-y-3 relative z-10">
                        <input type="text" value={editGoalTitle} onChange={e => setEditGoalTitle(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none font-medium" />
                        <input type="number" value={editGoalTarget} onChange={e => setEditGoalTarget(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none font-medium" />
+                       <input type="date" value={editGoalDeadline} onChange={e => setEditGoalDeadline(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none font-medium text-slate-600" />
                        <div className="flex items-center gap-2 pt-2">
                          <button onClick={() => handleSaveEdit(goal.id)} className="flex-1 bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider py-2.5 rounded-xl flex justify-center items-center gap-1 shadow-sm"><Check className="w-4 h-4" /> Saqlash</button>
                          <button onClick={() => setEditingGoalId(null)} className="flex-1 bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider py-2.5 rounded-xl flex justify-center items-center gap-1"><X className="w-4 h-4" /> Bekor qilish</button>
@@ -151,11 +219,25 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                            </div>
                          </div>
                          <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-full">
-                           <button onClick={() => { setEditingGoalId(goal.id); setEditGoalTitle(goal.title); setEditGoalTarget(goal.targetAmount.toString()); }} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-full transition-all"><Edit2 className="w-3.5 h-3.5" /></button>
+                           <button onClick={() => { setEditingGoalId(goal.id); setEditGoalTitle(goal.title); setEditGoalTarget(goal.targetAmount.toString()); setEditGoalDeadline(goal.deadline || ""); }} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-full transition-all"><Edit2 className="w-3.5 h-3.5" /></button>
                            <button onClick={() => handleDeleteGoal(goal.id)} className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-white rounded-full transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
                          </div>
                       </div>
                       
+                      {daysLeft !== null && (
+                        <div className="mb-4 bg-slate-50 p-3 rounded-xl flex items-center justify-between border border-slate-100/50">
+                           <div className="flex items-center gap-2">
+                             <CalendarDays className="w-4 h-4 text-slate-400" />
+                             <span className="text-xs font-semibold text-slate-600">
+                               {daysLeft > 0 ? (isComplete ? "Muddat tugallandi" : `${daysLeft} kun qoldi`) : "Muddat o'tdi"}
+                             </span>
+                           </div>
+                           {dailyRequired && dailyRequired > 0 && (
+                             <span className="text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-1 rounded-lg">~{Math.round(dailyRequired).toLocaleString()} / kun</span>
+                           )}
+                        </div>
+                      )}
+
                       <div className="mt-4">
                         <div className="flex justify-between items-end mb-2">
                            <span className="font-display font-bold text-xl text-slate-800 tracking-tight">{goal.currentAmount.toLocaleString()} <span className="text-xs font-semibold text-slate-400">UZS</span></span>

@@ -1,4 +1,4 @@
-import { UserProfile } from "../types";
+import { UserProfile, Transaction, Goal } from "../types";
 import { 
   User, Edit2, Check, X, Shield, Smartphone, 
   Settings, Bell, Globe, Moon, ChevronRight, 
@@ -6,17 +6,23 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { motion } from "motion/react";
+import { downloadCSV } from "../utils/export";
 
 interface ProfileProps {
   profile: UserProfile | null;
   token: string | null;
   onRefresh: () => void;
+  transactions: Transaction[];
+  goals: Goal[];
 }
 
-export default function Profile({ profile, token, onRefresh }: ProfileProps) {
+export default function Profile({ profile, token, onRefresh, transactions, goals }: ProfileProps) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState(profile?.displayName || "");
   const [savingName, setSavingName] = useState(false);
+  
+  const [notification, setNotification] = useState(true);
+  const [nightMode, setNightMode] = useState(false);
 
   const handleSaveName = async () => {
     if (!token || !editNameValue.trim()) return;
@@ -122,8 +128,8 @@ export default function Profile({ profile, token, onRefresh }: ProfileProps) {
         
         <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
            <div className="text-center w-full">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Telegram ID</p>
-              <p className="text-xs font-mono font-medium text-slate-700 bg-slate-50 py-1.5 px-3 rounded-lg inline-block break-all border border-slate-100">{profile?.telegramId}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ilova versiyasi</p>
+              <p className="text-xs font-mono font-medium text-slate-500 bg-slate-50 py-1.5 px-3 rounded-lg inline-block border border-slate-100">v1.2.0-beta</p>
            </div>
         </div>
       </motion.div>
@@ -134,25 +140,41 @@ export default function Profile({ profile, token, onRefresh }: ProfileProps) {
         <div>
           <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-4 mb-2">Asosiy Sozlamalar</h3>
           <div className="bg-white rounded-[1.5rem] overflow-hidden border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
-             <SettingsRow icon={Globe} iconBg="bg-blue-100" iconColor="text-blue-600" label="Ilova tili" value="O'zbekcha" />
-             <SettingsRow icon={CreditCard} iconBg="bg-emerald-100" iconColor="text-emerald-600" label="Asosiy valyuta" value="UZS" />
-             <SettingsRow icon={Bell} iconBg="bg-rose-100" iconColor="text-rose-600" label="Bildirishnomalar" value="Yoqish" />
-             <SettingsRow icon={Moon} iconBg="bg-slate-100" iconColor="text-slate-600" label="Tungi rejim" value="Avto" isLast={true} />
+             <SettingsRow icon={Globe} iconBg="bg-blue-100" iconColor="text-blue-600" label="Ilova tili" value="O'zbekcha" onClick={() => alert("Til sozlamalari tez orada qo'shiladi")} />
+             <SettingsRow icon={CreditCard} iconBg="bg-emerald-100" iconColor="text-emerald-600" label="Asosiy valyuta" value="UZS" onClick={() => alert("Faqat UZS valyutasi qo'llab-quvvatlanadi")} />
+             <SettingsRow icon={Bell} iconBg="bg-rose-100" iconColor="text-rose-600" label="Bildirishnomalar" value={notification ? "Yoqilgan" : "O'ch."} onClick={() => setNotification(!notification)} />
+             <SettingsRow icon={Moon} iconBg="bg-slate-100" iconColor="text-slate-600" label="Tungi rejim" value={nightMode ? "Yoqilgan" : "Avto"} onClick={() => setNightMode(!nightMode)} isLast={true} />
           </div>
+        </div>
+
+        <div>
+           <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-4 mb-2">Xavfsizlik</h3>
+           <div className="bg-white rounded-[1.5rem] overflow-hidden border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
+             <SettingsRow icon={Lock} iconBg="bg-violet-100" iconColor="text-violet-600" label="PIN-kod o'rnatish" onClick={() => alert("PIN-kod sozlamalari yangilanmoqda...")} isLast={true} />
+           </div>
         </div>
 
         <div>
           <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-4 mb-2">Ma'lumot va Xavfsizlik</h3>
           <div className="bg-white rounded-[1.5rem] overflow-hidden border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
-             <SettingsRow icon={HelpCircle} iconBg="bg-indigo-100" iconColor="text-indigo-600" label="Yordam va qoidalar" />
-             <SettingsRow icon={Lock} iconBg="bg-slate-100" iconColor="text-slate-600" label="Maxfiylik siyosati" />
-             <SettingsRow icon={Download} iconBg="bg-orange-100" iconColor="text-orange-600" label="Ma'lumotlarni yuklab olish" isLast={true} />
+             <SettingsRow icon={HelpCircle} iconBg="bg-indigo-100" iconColor="text-indigo-600" label="Yordam va qoidalar" onClick={() => alert("Yordam sahifasi tayyorlanmoqda")} />
+             <SettingsRow icon={Download} iconBg="bg-orange-100" iconColor="text-orange-600" label="Tranzaksiyalarni yuklash" onClick={() => downloadCSV(transactions, "tranzaksiyalar.csv")} />
+             <SettingsRow icon={Download} iconBg="bg-blue-100" iconColor="text-blue-600" label="Maqsadlarni yuklash" onClick={() => downloadCSV(goals, "maqsadlar.csv")} isLast={true} />
           </div>
         </div>
 
-        <button className="w-full bg-white text-rose-500 font-semibold py-4 rounded-[1.5rem] border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)] flex items-center justify-center gap-2 hover:bg-rose-50 active:bg-rose-100 transition-colors mb-6">
+        <button 
+          onClick={() => {
+            if (window.Telegram?.WebApp) {
+              window.Telegram.WebApp.close();
+            } else {
+              alert("Oynani yoping");
+            }
+          }}
+          className="w-full bg-white text-rose-500 font-semibold py-4 rounded-[1.5rem] border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)] flex items-center justify-center gap-2 hover:bg-rose-50 active:bg-rose-100 transition-colors mb-6"
+        >
           <LogOut className="w-5 h-5" />
-          <span>Tizimdan chiqish</span>
+          <span>Chiqish / Yopish</span>
         </button>
         
       </motion.div>
@@ -160,9 +182,9 @@ export default function Profile({ profile, token, onRefresh }: ProfileProps) {
   );
 }
 
-function SettingsRow({ icon: Icon, iconBg, iconColor, label, value, isLast = false }: any) {
+function SettingsRow({ icon: Icon, iconBg, iconColor, label, value, isLast = false, onClick }: any) {
   return (
-    <div className={`flex items-center justify-between p-4 bg-white hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer ${!isLast ? 'border-b border-slate-100' : ''}`}>
+    <div onClick={onClick} className={`flex items-center justify-between p-4 bg-white hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer ${!isLast ? 'border-b border-slate-100' : ''}`}>
       <div className="flex items-center gap-4">
         <div className={`w-9 h-9 rounded-[0.85rem] flex items-center justify-center ${iconBg}`}>
            <Icon className={`w-4.5 h-4.5 ${iconColor}`} />

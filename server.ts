@@ -18,6 +18,8 @@ type Goal = {
   currentAmount: number;
   color: string;
   createdAt: string;
+  deadline?: string;
+  isArchived?: boolean;
 };
 
 type Transaction = {
@@ -284,7 +286,7 @@ async function startServer() {
   // 3. Create Goal
   app.post("/api/goals", authMiddleware, (req, res) => {
     const userId = (req as any).user.userId;
-    const { title, targetAmount, color } = req.body;
+    const { title, targetAmount, color, deadline } = req.body;
 
     if (!title || !targetAmount) {
       return res.status(400).json({ error: "Missing title or target amount" });
@@ -297,7 +299,8 @@ async function startServer() {
       targetAmount: parseInt(targetAmount, 10),
       currentAmount: 0,
       color: color || "#3b82f6",
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      deadline: deadline || undefined
     };
 
     goals.push(newGoal);
@@ -307,7 +310,7 @@ async function startServer() {
   // 3a. Update Goal
   app.put("/api/goals/:id", authMiddleware, (req, res) => {
     const userId = (req as any).user.userId;
-    const { title, targetAmount, color } = req.body;
+    const { title, targetAmount, color, deadline } = req.body;
     const goalId = req.params.id;
 
     const goal = goals.find(g => g.id === goalId && g.userId === userId);
@@ -318,6 +321,7 @@ async function startServer() {
     if (title) goal.title = title;
     if (targetAmount) goal.targetAmount = parseInt(targetAmount, 10);
     if (color) goal.color = color;
+    if (deadline !== undefined) goal.deadline = deadline;
 
     res.json(goal);
   });

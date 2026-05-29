@@ -178,8 +178,8 @@ export default function App() {
                transition={{ duration: 0.2 }}
              >
                {activeTab === "home" && <Home goals={goals} transactions={transactions} token={token} onRefresh={fetchData} totalSaved={totalSaved} />}
-               {activeTab === "stats" && <Stats goals={goals} />}
-               {activeTab === "profile" && <Profile profile={profile} token={token} onRefresh={fetchData} />}
+               {activeTab === "stats" && <Stats goals={goals} transactions={transactions} />}
+               {activeTab === "profile" && <Profile profile={profile} token={token} onRefresh={fetchData} transactions={transactions} goals={goals} />}
              </motion.div>
            </AnimatePresence>
          )}

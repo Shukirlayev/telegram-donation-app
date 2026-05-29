@@ -1,18 +1,38 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-import { Goal } from "../types";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Goal, Transaction } from "../types";
 import { PieChart as PieChartIcon } from "lucide-react";
 import { motion } from "motion/react";
+import { useMemo } from "react";
 
 interface StatsProps {
   goals: Goal[];
+  transactions: Transaction[];
 }
 
-export default function Stats({ goals }: StatsProps) {
+export default function Stats({ goals, transactions }: StatsProps) {
   const chartData = goals.map(g => ({
     name: g.title,
     value: g.currentAmount,
     color: g.color || "#" + Math.floor(Math.random()*16777215).toString(16)
   })).filter(g => g.value > 0);
+
+  const monthlyData = useMemo(() => {
+    if (!transactions) return [];
+    
+    // Simple bar chart mapping (e.g. per day or per month based on last 7 items)
+    const dataByDate: Record<string, number> = {};
+    transactions.forEach(t => {
+      const d = new Date(t.createdAt);
+      const dateStr = d.toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric' });
+      dataByDate[dateStr] = (dataByDate[dateStr] || 0) + t.amount;
+    });
+
+    return Object.keys(dataByDate).map(date => ({
+      date,
+      amount: dataByDate[date]
+    })).reverse().slice(-7); // Last 7 active days
+  }, [transactions]);
+
 
   if (goals.length === 0) {
     return (
@@ -74,11 +94,37 @@ export default function Stats({ goals }: StatsProps) {
         </div>
       </motion.div>
 
+      {monthlyData.length > 0 && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white p-5 rounded-[1.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100"
+        >
+          <h3 className="font-display font-semibold text-slate-800 text-base mb-4">Oxirgi 7 Kundagi Tejashlar</h3>
+          <div className="h-[220px] w-full mt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} tickFormatter={(val) => `${val / 1000}k`} />
+                <Tooltip 
+                  cursor={{ fill: '#f1f5f9' }}
+                  formatter={(value: number) => [`${value.toLocaleString()} UZS`, 'Tejaldi']}
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}
+                />
+                <Bar dataKey="amount" fill="#6366f1" radius={[6, 6, 0, 0]} maxBarSize={45} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+      )}
+
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="bg-white p-5 rounded-[1.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100"
+        transition={{ delay: 0.2 }}
+        className="bg-white p-5 rounded-[1.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100 mb-6"
       >
         <h3 className="font-display font-semibold text-slate-800 text-base mb-4">Mablag'lar</h3>
         <div className="space-y-4">
