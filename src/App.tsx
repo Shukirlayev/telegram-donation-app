@@ -10,6 +10,7 @@ import Stats from "./components/Stats";
 import Profile from "./components/Profile";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslation } from "./i18n";
+import { useAppContext } from "./contexts/AppContext";
 
 declare global {
   interface Window {
@@ -21,6 +22,7 @@ declare global {
 
 export default function App() {
   const { t } = useTranslation();
+  const { showToast, formatMoney, currencySymbol } = useAppContext();
   const [token, setToken] = useState<string | null>(null);
   const [loadingText, setLoadingText] = useState<string>("Boshlanmoqda...");
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +65,7 @@ export default function App() {
       })
       .catch(err => {
         setError(err.message || "Telegram orqali tizimga kirishda xato");
+        showToast("Avtorizatsiya xatosi", "error");
       })
       .finally(() => setLoadingText(""));
   }, []);
@@ -82,6 +85,7 @@ export default function App() {
       setProfile(data.profile || null);
     } catch(err: any) {
       setError(err.message || "Xatolik yuz berdi");
+      showToast("Ma'lumotni yuklashda xatolik", "error");
     } finally {
       setLoadingData(false);
     }
@@ -93,11 +97,11 @@ export default function App() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-slate-50 text-slate-800 p-6">
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 p-6">
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center">
           <AlertCircle className="w-14 h-14 text-rose-500 mb-4" />
           <h2 className="text-xl font-display font-semibold mb-2">Xatolik</h2>
-          <p className="text-center text-sm text-slate-600 max-w-sm">{error}</p>
+          <p className="text-center text-sm text-slate-600 dark:text-slate-400 max-w-sm">{error}</p>
         </motion.div>
       </div>
     );
@@ -105,9 +109,9 @@ export default function App() {
 
   if (loadingText) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-slate-50">
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-slate-50 dark:bg-slate-900">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-4" />
-        <p className="text-slate-500 font-medium animate-pulse">{loadingText}</p>
+        <p className="text-slate-500 dark:text-slate-400 font-medium animate-pulse">{loadingText}</p>
       </div>
     );
   }
@@ -123,12 +127,12 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#f2f2f7] pb-28 font-sans overflow-x-hidden selection:bg-indigo-500/30">
+    <div className="min-h-[100dvh] bg-[#f2f2f7] dark:bg-slate-900 pb-28 font-sans overflow-x-hidden selection:bg-indigo-500/30 transition-colors duration-300">
       {/* Premium Header - Apple Wallet Style */}
-      <div className="relative bg-gradient-to-tr from-slate-900 via-slate-800 to-slate-900 px-6 py-10 text-white rounded-b-[2.5rem] shadow-[0_10px_40px_rgb(0,0,0,0.15)] min-h-[190px] overflow-hidden">
+      <div className="relative bg-gradient-to-tr from-slate-900 via-slate-800 to-slate-900 dark:from-indigo-950 dark:via-slate-900 dark:to-indigo-950 px-6 py-10 text-white rounded-b-[2.5rem] shadow-[0_10px_40px_rgb(0,0,0,0.15)] min-h-[190px] overflow-hidden transition-colors duration-300">
         {/* Decorative subtle gradient */}
         <div className="absolute -top-24 -right-24 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-10 -left-10 w-56 h-56 bg-sky-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-10 -left-10 w-56 h-56 bg-sky-500/10 rounded-full blur-3xl border border-white/5" />
         
         <div className="relative z-10 flex flex-col h-full justify-between mt-2">
           <div className="flex justify-between items-center mb-6">
@@ -158,9 +162,9 @@ export default function App() {
                className="flex items-baseline gap-2"
              >
                <span className="text-4xl md:text-5xl font-display font-bold tracking-tight text-white">
-                 {totalSaved.toLocaleString()}
+                 {formatMoney(totalSaved)}
                </span>
-               {activeTab === "home" && <span className="text-lg font-semibold text-slate-400">UZS</span>}
+               {activeTab === "home" && <span className="text-lg font-semibold text-slate-400">{currencySymbol}</span>}
              </motion.div>
           </div>
         </div>
@@ -188,7 +192,7 @@ export default function App() {
          )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-2xl border-t border-white/50 pb-safe pt-2 px-6 shadow-[0_-4px_20px_rgb(0,0,0,0.02)]">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border-t border-white/50 dark:border-slate-800/80 pb-safe pt-2 px-6 shadow-[0_-4px_20px_rgb(0,0,0,0.02)] transition-colors duration-300">
         <div className="flex justify-around items-center max-w-md mx-auto pb-4 pt-1">
            <NavItem icon={HomeIcon} label={t("nav.home")} isActive={activeTab === "home"} onClick={() => setActiveTab("home")} />
            <NavItem icon={PieChartIcon} label={t("nav.stats")} isActive={activeTab === "stats"} onClick={() => setActiveTab("stats")} />
@@ -204,7 +208,7 @@ function NavItem({ icon: Icon, label, isActive, onClick }: { icon: any, label: s
     <button 
       onClick={onClick} 
       className={`flex flex-col items-center justify-center gap-1 w-[72px] transition-colors duration-200 ${
-        isActive ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+        isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
       }`}
     >
       <Icon className={`w-6 h-6 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
