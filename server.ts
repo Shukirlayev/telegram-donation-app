@@ -13,11 +13,22 @@ import { getFirestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, dele
 
 dotenv.config();
 
-const firebaseConfig = JSON.parse(fs.readFileSync('./firebase-applet-config.json', 'utf8'));
+let firebaseConfig: any;
+if (fs.existsSync('./firebase-applet-config.json')) {
+  firebaseConfig = JSON.parse(fs.readFileSync('./firebase-applet-config.json', 'utf8'));
+} else {
+  firebaseConfig = {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    appId: process.env.FIREBASE_APP_ID,
+    apiKey: process.env.FIREBASE_API_KEY,
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+    firestoreDatabaseId: process.env.FIREBASE_DATABASE_ID || '(default)'
+  };
+}
 
 // Initialize Firebase Web SDK instead of Admin to bypass container cred issue
 const adminApp = initializeApp(firebaseConfig);
-const firestoreDb = getFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
+const firestoreDb = getFirestore(adminApp, firebaseConfig.firestoreDatabaseId || '(default)');
 
 const db = {
   collection: (path: string) => new CollectionRef(`bot_secret_xyz123/prod/${path}`),
