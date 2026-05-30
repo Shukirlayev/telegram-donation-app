@@ -53,8 +53,11 @@ export default function App() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ initData })
     })
-      .then(res => {
-        if (!res.ok) throw new Error("Imzo tasdiqlanmadi");
+      .then(async res => {
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || "Imzo tasdiqlanmadi");
+        }
         return res.json();
       })
       .then((data: { token: string; userId: number }) => {

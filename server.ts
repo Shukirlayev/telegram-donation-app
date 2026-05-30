@@ -112,7 +112,7 @@ type UserProfile = {
 };
 
 // Initialize Telegraf bot
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN?.trim();
 const JWT_SECRET = process.env.JWT_SECRET || "default_unsafe_secret";
 
 let bot: Telegraf | null = null;
@@ -331,11 +331,15 @@ if (BOT_TOKEN) {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
 
   // API Routes
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
   app.post("/api/auth/telegram", async (req, res) => {
     const { initData } = req.body;
     if (!initData || !BOT_TOKEN) {
@@ -358,11 +362,13 @@ async function startServer() {
       const dataCheckString = keys.map(k => `${k}=${urlParams.get(k)}`).join("\n");
 
       // Verify HMAC-SHA256
-      const secretKey = crypto.createHmac("sha256", "WebAppData").update(BOT_TOKEN).digest();
+      const botToken = BOT_TOKEN.trim();
+      const secretKey = crypto.createHmac("sha256", "WebAppData").update(botToken).digest();
       const computedHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
 
       if (computedHash !== hash) {
-         res.status(401).json({ error: "Invalid signature" });
+         console.error("Auth failed! Computed:", computedHash, "Expected:", hash);
+         res.status(401).json({ error: `Not matching. Len: ${botToken.length}, CheckData: ${dataCheckString.substring(0,20)}...` });
          return;
       }
 
@@ -582,7 +588,18 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
+    
+    // Render free tier keep-awake
+    if (process.env.RENDER_EXTERNAL_URL) {
+      console.log(`Keep-awake ping yoqildi: ${process.env.RENDER_EXTERNAL_URL}`);
+      setInterval(() => {
+        fetch(`${process.env.RENDER_EXTERNAL_URL}/api/health`)
+          .then(res => res.json())
+          .then(data => console.log('Ping yuborildi:', data.timestamp))
+          .catch(err => console.error("Keep-awake ping xatosi:", err.message));
+      }, 14 * 60 * 1000); // 14 daqiqa
+    }
   });
 }
 
