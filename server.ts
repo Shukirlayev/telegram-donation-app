@@ -427,12 +427,18 @@ async function startServer() {
       if (!userDoc.exists) {
         userProfile = {
           userId: user.id,
-          telegramUsername: user.username,
-          telegramFirstName: user.first_name,
-          telegramLastName: user.last_name,
-          telegramPhotoUrl: user.photo_url,
+          telegramUsername: user.username || null,
+          telegramFirstName: user.first_name || null,
+          telegramLastName: user.last_name || null,
+          telegramPhotoUrl: user.photo_url || null,
           displayName: user.first_name || user.username || "Foydalanuvchi",
         };
+        // Explicitly remove `undefined` properties to avoid Firestore errors
+        Object.keys(userProfile).forEach(key => {
+          if ((userProfile as any)[key] === undefined) {
+             delete (userProfile as any)[key];
+          }
+        });
         await userRef.set(userProfile);
       } else {
         userProfile = userDoc.data() as UserProfile;
