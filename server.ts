@@ -171,6 +171,46 @@ if (BOT_TOKEN) {
     }
   });
 
+  bot.command('broadcast', async (ctx) => {
+    const adminIdStr = process.env.ADMIN_TELEGRAM_ID;
+    const tempPassword = "sarvar_admin";
+    
+    const parts = ctx.message.text.split(' ');
+    const hasAdminRights = (adminIdStr && ctx.from.id.toString() === adminIdStr) || parts[1] === tempPassword;
+    
+    if (!hasAdminRights) {
+      return ctx.reply("Sizda ushbu buyruqni bajarish huquqi yo'q.");
+    }
+    
+    let messageToBroadcast = "";
+    if (parts[1] === tempPassword) {
+      messageToBroadcast = parts.slice(2).join(' ');
+    } else {
+      messageToBroadcast = parts.slice(1).join(' ');
+    }
+
+    if (!messageToBroadcast) {
+      return ctx.reply("Iltimos, yuborish uchun matn kiriting.\nMasalan: `/broadcast Hammaga salom!`", { parse_mode: "Markdown" });
+    }
+
+    const snapUsers = await db.collection('users').get();
+    let successCount = 0;
+    
+    await ctx.reply(`Barcha foydalanuvchilarga xabar yuborish boshlandi (${snapUsers.size} ta)...`);
+    
+    for (const doc of snapUsers.docs) {
+      const user = doc.data() as UserProfile;
+      try {
+        await ctx.telegram.sendMessage(user.userId, `📢 *Xabarnoma*\n\n${messageToBroadcast}`, { parse_mode: "Markdown" });
+        successCount++;
+      } catch (e) {
+        console.error(`Foydalanuvchiga yuborib bo'lmadi: ${user.userId}`);
+      }
+    }
+    
+    return ctx.reply(`✅ Xabar yuborish yakunlandi!\n- Jami qamrov: ${snapUsers.size}\n- Yetib bordi: ${successCount} kishiga`);
+  });
+
   bot.on('text', async (ctx) => {
     const text = ctx.message.text.trim();
     const userId = ctx.from.id;
@@ -292,7 +332,7 @@ if (BOT_TOKEN) {
     await ctx.editMessageText(message);
   });
 
-  bot.launch().catch(console.error);
+  bot.launch({ dropPendingUpdates: true }).catch(console.error);
 
   // Cron Job
   cron.schedule("0 10 * * *", async () => {
