@@ -26,7 +26,7 @@ declare global {
 
 export default function App() {
   const { t } = useTranslation();
-  const { showToast, formatMoney, currencySymbol } = useAppContext();
+  const { showToast, formatMoney, currencySymbol, syncCurrencySilent, currency } = useAppContext();
   const [token, setToken] = useState<string | null>(null);
   const [loadingText, setLoadingText] = useState<string>("Boshlanmoqda...");
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +72,7 @@ export default function App() {
       })
       .then((data: { token: string; userId: number }) => {
         setToken(data.token);
+        localStorage.setItem('app_token', data.token);
         if (window.Telegram?.WebApp?.expand) {
             window.Telegram.WebApp.expand();
             window.Telegram.WebApp.setHeaderColor?.('#1e1b4b'); // Match indigo-950
@@ -96,7 +97,13 @@ export default function App() {
       const data = await res.json();
       setGoals(data.goals || []);
       setTransactions(data.transactions || []);
-      setProfile(data.profile || null);
+      
+      const p = data.profile || null;
+      setProfile(p);
+      
+      if (p?.preferredCurrency && p.preferredCurrency !== currency) {
+        syncCurrencySilent(p.preferredCurrency);
+      }
     } catch(err: any) {
       setError(err.message || "Xatolik yuz berdi");
       showToast("Ma'lumotni yuklashda xatolik", "error");

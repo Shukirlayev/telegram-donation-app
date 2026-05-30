@@ -14,6 +14,7 @@ interface AppContextType {
   setTheme: (t: Theme) => void;
   currency: Currency;
   setCurrency: (c: Currency) => void;
+  syncCurrencySilent: (c: Currency) => void;
   notificationsEnabled: boolean;
   setNotificationsEnabled: (b: boolean) => void;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -71,6 +72,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         console.error(err);
       }
     }
+  };
+
+  const syncCurrencySilent = (c: Currency) => {
+    setCurrencyState(c);
+    localStorage.setItem('app_currency', c);
   };
 
   const setNotificationsEnabled = async (b: boolean) => {
@@ -152,6 +158,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     <AppContext.Provider value={{
       theme, setTheme,
       currency, setCurrency: setCurrencyAndSave,
+      syncCurrencySilent,
       notificationsEnabled, setNotificationsEnabled,
       showToast, formatMoney,
       currencySymbol: CURRENCY_SYMBOLS[currency]
