@@ -8,8 +8,9 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { downloadCSV } from "../utils/export";
 import Portal from "./Portal";
-import { useTranslation, translations } from "../i18n";
+import { useTranslation } from "../i18n";
 import { useAppContext } from "../contexts/AppContext";
+import { triggerHaptic } from "../utils/haptics";
 
 interface ProfileProps {
   profile: UserProfile | null;
@@ -217,9 +218,13 @@ export default function Profile({ profile, token, onRefresh, transactions, goals
                 <h3 className="text-xl font-display font-semibold text-slate-800 dark:text-white text-center mb-6">{t("profile.languageModalTitle")}</h3>
                 
                 <div className="space-y-3">
-                  {['uz', 'en', 'ru', 'qq'].map((l) => (
-                    <button key={l} onClick={() => { setLang(l as any); setShowLangModal(false); }} className={`w-full p-4 rounded-2xl flex items-center justify-between transition-colors ${lang === l ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 shadow-sm' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-slate-700'}`}>
-                       <span className="font-semibold">{(translations[l as 'uz'|'en'|'ru'|'qq'] as any).profile.languageNames[l]}</span>
+                  {['uz', 'en', 'ru', 'qq', 'kk'].map((l) => (
+                    <button key={l} onClick={() => { 
+                       triggerHaptic('selection');
+                       setLang(l as any); 
+                       setShowLangModal(false); 
+                    }} className={`w-full p-4 rounded-2xl flex items-center justify-between transition-colors ${lang === l ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 shadow-sm' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-slate-700'}`}>
+                       <span className="font-semibold">{(translations[l as 'uz'|'en'|'ru'|'qq'|'kk'] as any).profile.languageNames[l]}</span>
                        {lang === l && <Check className="w-5 h-5 text-indigo-500" />}
                     </button>
                   ))}
@@ -356,8 +361,12 @@ export default function Profile({ profile, token, onRefresh, transactions, goals
 }
 
 function SettingsRow({ icon: Icon, iconBg, iconColor, label, value, isLast = false, onClick }: any) {
+  const handleClick = () => {
+    import('../utils/haptics').then(m => m.triggerHaptic('light'));
+    if (onClick) onClick();
+  };
   return (
-    <div onClick={onClick} className={`flex items-center justify-between py-3 px-4 bg-transparent active:bg-white/50 dark:active:bg-slate-700/50 transition-colors cursor-pointer relative`}>
+    <div onClick={handleClick} className={`flex items-center justify-between py-3 px-4 bg-transparent active:bg-white/50 dark:active:bg-slate-700/50 transition-colors cursor-pointer relative`}>
       <div className="flex items-center gap-3.5 z-10">
         <div className={`w-[30px] h-[30px] rounded-[7px] flex items-center justify-center shrink-0 ${iconBg} shadow-sm`}>
            <Icon className={`w-[18px] h-[18px] ${iconColor}`} />

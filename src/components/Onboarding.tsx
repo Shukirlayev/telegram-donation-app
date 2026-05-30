@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from '../i18n';
 import { Check, ChevronRight, MessageCircle } from 'lucide-react';
 
+import { triggerHaptic } from '../utils/haptics';
+
 interface OnboardingProps {
   onComplete: () => void;
   telegramUser: any;
@@ -21,6 +23,7 @@ export default function Onboarding({ onComplete, telegramUser }: OnboardingProps
   ];
 
   const handleNext = () => {
+    triggerHaptic('light');
     if (step < 3) setStep(step + 1);
     else onComplete();
   };
@@ -96,7 +99,10 @@ export default function Onboarding({ onComplete, telegramUser }: OnboardingProps
               {languages.map(l => (
                 <button
                   key={l.code}
-                  onClick={() => setLang(l.code as any)}
+                  onClick={() => {
+                     triggerHaptic('selection');
+                     setLang(l.code as any);
+                  }}
                   className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
                     lang === l.code 
                       ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 shadow-sm' 

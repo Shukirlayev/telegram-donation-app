@@ -5,6 +5,10 @@ import { motion, AnimatePresence } from "motion/react";
 import confetti from "canvas-confetti";
 import { useTranslation } from "../i18n";
 import { useAppContext } from "../contexts/AppContext";
+import { triggerHaptic } from "../utils/haptics";
+import SwipeableGoal from "./SwipeableGoal";
+import AddTransactionModal from "./AddTransactionModal";
+import { EmptyGoalsState, EmptyTransactionsState } from "./EmptyStates";
 
 interface HomeProps {
   goals: Goal[];
@@ -25,6 +29,8 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
   const [editGoalTitle, setEditGoalTitle] = useState("");
   const [editGoalTarget, setEditGoalTarget] = useState("");
   const [editGoalDeadline, setEditGoalDeadline] = useState("");
+  
+  const [transactionGoal, setTransactionGoal] = useState<Goal | null>(null);
   
   const { t } = useTranslation();
   const { formatMoney, currencySymbol, showToast, currency } = useAppContext();
@@ -167,7 +173,10 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display font-semibold text-slate-800 dark:text-white text-[19px] tracking-tight">{t("home.goals")}</h2>
           <button 
-            onClick={() => setShowNewGoal(!showNewGoal)}
+            onClick={() => {
+              triggerHaptic('light');
+              setShowNewGoal(!showNewGoal);
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200/50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
           >
             {showNewGoal ? <X className="w-4 h-4" /> : <><Plus className="w-4 h-4" /><span className="text-xs font-semibold">{t("home.add")}</span></>}
@@ -222,11 +231,7 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
         </AnimatePresence>
 
         {activeGoals.length === 0 ? (
-          <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl p-8 rounded-[1.5rem] border border-white/60 dark:border-slate-700/50 text-center shadow-sm transition-colors">
-            <Target className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-            <p className="text-slate-700 dark:text-slate-200 font-medium text-[15px]">{t("home.noGoalsTitle")}</p>
-            <p className="text-slate-500 dark:text-slate-400 text-[13px] mt-1">{t("home.noGoalsDesc")}</p>
-          </div>
+          <EmptyGoalsState title={t("home.noGoalsTitle")} description={t("home.noGoalsDesc")} />
         ) : (
           <div className="grid gap-4">
             {activeGoals.map((goal, index) => {
@@ -251,10 +256,10 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                   key={goal.id} 
-                  className="bg-white/70 dark:bg-slate-800/80 backdrop-blur-xl p-5 rounded-[1.5rem] shadow-sm border border-white/60 dark:border-slate-700/50 relative overflow-hidden group transition-colors"
                 >
                   {isEditing ? (
-                    <div className="space-y-3 relative z-10 bg-white/40 dark:bg-slate-900/40 p-2.5 rounded-2xl border border-white/50 dark:border-slate-700/50">
+                    <div className="bg-white/70 dark:bg-slate-800/80 backdrop-blur-xl p-5 rounded-[1.5rem] shadow-sm border border-white/60 dark:border-slate-700/50 relative overflow-hidden transition-colors">
+                      <div className="space-y-3 relative z-10 bg-white/40 dark:bg-slate-900/40 p-2.5 rounded-2xl border border-white/50 dark:border-slate-700/50">
                        <input type="text" value={editGoalTitle} onChange={e => setEditGoalTitle(e.target.value)} className="w-full bg-white/80 dark:bg-slate-800 border border-white/80 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm outline-none font-medium shadow-sm transition-all focus:ring-2 focus:ring-indigo-500/50 dark:text-white caret-indigo-500" />
                        <input type="number" value={editGoalTarget} onChange={e => setEditGoalTarget(e.target.value)} className="w-full bg-white/80 dark:bg-slate-800 border border-white/80 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm outline-none font-medium shadow-sm transition-all focus:ring-2 focus:ring-indigo-500/50 dark:text-white caret-indigo-500" />
                        <input type="date" value={editGoalDeadline} onChange={e => setEditGoalDeadline(e.target.value)} className="w-full bg-white/80 dark:bg-slate-800 border border-white/80 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm outline-none font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all focus:ring-2 focus:ring-indigo-500/50 caret-indigo-500" />
@@ -263,65 +268,28 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
                          <button onClick={() => setEditingGoalId(null)} className="flex-1 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[13px] font-semibold py-2.5 rounded-xl flex justify-center items-center gap-1.5 active:scale-95 transition-transform">{t("home.cancel")}</button>
                        </div>
                     </div>
+                  </div>
                   ) : (
-                    <div className="relative z-10 w-full">
-                      <div className="flex justify-between items-start mb-3">
-                         <div className="flex items-center gap-3">
-                           <div className={`w-[42px] h-[42px] rounded-[14px] flex items-center justify-center shrink-0 ${isComplete ? 'bg-emerald-100/80 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'}`}>
-                              {isComplete ? <CheckCircle2 className="w-[22px] h-[22px]" /> : <Target className="w-[22px] h-[22px]" />}
-                           </div>
-                           <div className="min-w-0 pr-2">
-                             <h3 className="font-display font-semibold text-slate-800 dark:text-white text-[17px] leading-tight truncate">
-                               {goal.title}
-                             </h3>
-                             <p className="text-[12px] font-medium text-slate-500 mt-0.5 truncate tracking-wide">{t("home.target")} {formatMoney(goal.targetAmount)} {currencySymbol}</p>
-                           </div>
-                         </div>
-                         <div className="flex items-center gap-1">
-                           <button onClick={(e) => { e.stopPropagation(); handleCompleteGoal(goal.id); }} className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all active:scale-90" title="Tugatish"><CheckCircle2 className="w-[18px] h-[18px]" /></button>
-                           <button onClick={() => { 
-                               setEditingGoalId(goal.id); 
-                               setEditGoalTitle(goal.title); 
-                               // Convert back to current currency display amount when editing
-                               const rate = currency === 'UZS' ? 1 : currency === 'USD' ? 12500 : currency === 'EUR' ? 13500 : 140;
-                               setEditGoalTarget((goal.targetAmount / rate).toString()); 
-                               setEditGoalDeadline(goal.deadline || ""); 
-                           }} className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all active:scale-90" title="Tahrirlash"><Edit2 className="w-[18px] h-[18px]" /></button>
-                           <button onClick={() => handleDeleteGoal(goal.id)} className="p-2 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-all active:scale-90" title="O'chirish"><Trash2 className="w-[18px] h-[18px]" /></button>
-                         </div>
-                      </div>
-                      
-                       {daysLeft !== null && (
-                        <div className="mb-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur p-2.5 rounded-xl flex items-center justify-between border border-white/60 dark:border-slate-700/50">
-                           <div className="flex items-center gap-2">
-                             <div className="p-1 bg-white/80 dark:bg-slate-800 rounded-md shadow-sm border border-white/60 dark:border-slate-700">
-                               <CalendarDays className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                             </div>
-                             <span className="text-[13px] font-medium text-slate-600 dark:text-slate-300">
-                               {daysLeft > 0 ? (isComplete ? t("home.deadlineEnd") : `${daysLeft} ${t("home.daysLeft")}`) : t("home.deadlinePassed")}
-                             </span>
-                           </div>
-                           {dailyRequired && dailyRequired > 0 && (
-                             <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">~{formatMoney(dailyRequired)} {currencySymbol}/k</span>
-                           )}
-                        </div>
-                      )}
-
-                      <div className="mt-4">
-                        <div className="flex justify-between items-end mb-2.5">
-                           <span className="font-display font-semibold text-[22px] text-slate-800 dark:text-white tracking-tight leading-none">{formatMoney(goal.currentAmount)}</span>
-                           <span className={`text-[12px] font-bold px-2 py-0.5 rounded-md ${isComplete ? 'bg-emerald-100/80 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-slate-200/50 text-slate-600 dark:bg-slate-700/50 dark:text-slate-400'}`}>{percent}%</span>
-                        </div>
-                        <div className="h-[8px] w-full bg-white/60 dark:bg-slate-900/60 rounded-full overflow-hidden border border-white/50 dark:border-slate-700/50 shadow-inner">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${percent}%` }}
-                            transition={{ duration: 1, ease: "easeOut" }}
-                            className={`h-full rounded-full shadow-inner ${isComplete ? 'bg-emerald-500' : 'bg-slate-800 dark:bg-indigo-400'}`} 
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    <SwipeableGoal 
+                      goal={goal}
+                      isComplete={isComplete}
+                      percent={percent}
+                      daysLeft={daysLeft}
+                      dailyRequired={dailyRequired}
+                      currencySymbol={currencySymbol}
+                      t={t}
+                      formatMoney={formatMoney}
+                      onEdit={(g) => {
+                         setEditingGoalId(g.id); 
+                         setEditGoalTitle(g.title); 
+                         const rate = currency === 'UZS' ? 1 : currency === 'USD' ? 12500 : currency === 'EUR' ? 13500 : 140;
+                         setEditGoalTarget((g.targetAmount / rate).toString()); 
+                         setEditGoalDeadline(g.deadline || ""); 
+                      }}
+                      onDelete={handleDeleteGoal}
+                      onComplete={handleCompleteGoal}
+                      onAddMoney={(g) => setTransactionGoal(g)}
+                    />
                   )}
                 </motion.div>
               );
@@ -371,10 +339,7 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
         </div>
 
         {transactions.length === 0 ? (
-          <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl p-6 rounded-[1.5rem] text-center border border-white/60 dark:border-slate-700/50 shadow-sm transition-colors">
-            <Wallet className="w-8 h-8 text-slate-400 mx-auto mb-3" />
-            <p className="text-slate-600 dark:text-slate-300 font-medium text-[15px]">{t("home.noActivity")}</p>
-          </div>
+          <EmptyTransactionsState description={t("home.noActivity")} />
         ) : (
           <div className="bg-white/70 dark:bg-slate-800/80 backdrop-blur-xl rounded-[1.5rem] shadow-sm border border-white/60 dark:border-slate-700/50 overflow-hidden transition-colors">
             {transactions.slice().reverse().slice(0, 10).map((tItem, index) => {
@@ -403,6 +368,13 @@ export default function Home({ goals, transactions, token, onRefresh, totalSaved
           </div>
         )}
       </section>
+      <AddTransactionModal 
+        isOpen={!!transactionGoal} 
+        onClose={() => setTransactionGoal(null)} 
+        goal={transactionGoal} 
+        token={token} 
+        onRefresh={onRefresh} 
+      />
     </div>
   );
 }

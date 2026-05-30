@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { useEffect, useState } from "react";
+import AnimatedNumber from "./components/AnimatedNumber";
+import { triggerHaptic } from "./utils/haptics";
 import { UserProfile, Goal, Transaction } from "./types";
 import { Loader2, AlertCircle, Home as HomeIcon, PieChart as PieChartIcon, User as UserIcon } from "lucide-react";
 import Home from "./components/Home";
@@ -180,14 +182,16 @@ export default function App() {
                {activeTab === "home" ? t("header.totalSaved") : activeTab === "stats" ? t("header.stats") : t("header.profile")}
              </p>
              <motion.div 
-               key={totalSaved}
+               key="header-val"
                initial={{ opacity: 0, y: 10 }}
                animate={{ opacity: 1, y: 0 }}
                className="flex items-baseline gap-2"
              >
-               <span className="text-4xl md:text-5xl font-display font-bold tracking-tight text-white">
-                 {formatMoney(totalSaved)}
-               </span>
+               <AnimatedNumber 
+                  className="text-4xl md:text-5xl font-display font-bold tracking-tight text-white"
+                  value={totalSaved}
+                  formatFunc={formatMoney}
+               />
                {activeTab === "home" && <span className="text-lg font-semibold text-slate-400">{currencySymbol}</span>}
              </motion.div>
           </div>
@@ -230,14 +234,19 @@ export default function App() {
 }
 
 function NavItem({ icon: Icon, label, isActive, onClick }: { icon: any, label: string, isActive: boolean, onClick: () => void }) {
+  const handleClick = () => {
+    if (!isActive) triggerHaptic('light');
+    onClick();
+  };
+
   return (
     <button 
-      onClick={onClick} 
+      onClick={handleClick} 
       className={`flex flex-col items-center justify-center gap-1 w-[72px] transition-colors duration-200 ${
         isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
       }`}
     >
-      <Icon className={`w-6 h-6 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
+      <Icon className={`w-6 h-6 transition-transform duration-200 ${isActive ? 'scale-110' : 'active:scale-95'}`} strokeWidth={isActive ? 2.5 : 2} />
       <span className="text-[10px] font-semibold tracking-wide">{label}</span>
     </button>
   );

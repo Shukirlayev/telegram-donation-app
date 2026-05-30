@@ -115,6 +115,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [theme]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success', force = false) => {
+    import('../utils/haptics').then(m => m.triggerNotification(type === 'info' ? 'warning' : type));
     if (!notificationsEnabled && !force) return;
     const id = Date.now();
     setToasts((prev) => [...prev, { id, message, type }]);
