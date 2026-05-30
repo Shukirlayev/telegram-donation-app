@@ -334,7 +334,7 @@ export const translations = {
        downloadGoals: "Maqsetlerdi júklew",
        exit: "Shıǵıw / Jabıw"
     }
-,
+  },
   kk: {
     greeting: {
        morning: "Қайырлы таң",
@@ -417,7 +417,6 @@ export const translations = {
        downloadGoals: "Мақсаттарды жүктеп алу",
        exit: "Шығу / Жабу"
     }
-  }
   }
 };
 
