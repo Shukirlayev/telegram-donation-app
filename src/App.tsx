@@ -8,6 +8,7 @@ import { Loader2, AlertCircle, Home as HomeIcon, PieChart as PieChartIcon, User 
 import Home from "./components/Home";
 import Stats from "./components/Stats";
 import Profile from "./components/Profile";
+import Onboarding from "./components/Onboarding";
 import { HomeSkeleton, StatsSkeleton, ProfileSkeleton } from "./components/Skeletons";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslation } from "./i18n";
@@ -34,10 +35,17 @@ export default function App() {
   const [loadingData, setLoadingData] = useState<boolean>(true);
   
   const [activeTab, setActiveTab] = useState<"home" | "stats" | "profile">("home");
+  
+  const [isOnboarding, setIsOnboarding] = useState<boolean>(() => !localStorage.getItem('app_onboarded'));
+  const [telegramUser, setTelegramUser] = useState<any>(null);
 
   // 1. Auth
   useEffect(() => {
     const initData = window.Telegram?.WebApp?.initData;
+    
+    if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+      setTelegramUser(window.Telegram.WebApp.initDataUnsafe.user);
+    }
 
     // FOR TESTING LOCALLY WITHOUT TELEGRAM:
     if (!initData) {
@@ -98,6 +106,18 @@ export default function App() {
   useEffect(() => {
     fetchData();
   }, [token]);
+
+  if (isOnboarding) {
+    return (
+      <Onboarding
+        telegramUser={telegramUser || profile || null}
+        onComplete={() => {
+          localStorage.setItem('app_onboarded', 'true');
+          setIsOnboarding(false);
+        }}
+      />
+    );
+  }
 
   if (error) {
     return (

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 
-type Language = 'uz' | 'ru' | 'en' | 'qq';
+type Language = 'uz' | 'ru' | 'en' | 'qq' | 'kk';
 
 export const translations = {
   uz: {
@@ -68,7 +68,7 @@ export const translations = {
        appVersion: "Ilova versiyasi",
        mainSettings: "ASOSIY SOZLAMALAR",
        language: "Ilova tili",
-       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English", qq: "Qaraqalpaqsha" },
+       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English", qq: "Qaraqalpaqsha", kk: "Қазақша" },
        languageModalTitle: "Tilni tanlang",
        currency: "Asosiy valyuta",
        currencyOnly: "Faqat UZS valyutasi qo'llab-quvvatlanadi",
@@ -151,7 +151,7 @@ export const translations = {
        appVersion: "Версия приложения",
        mainSettings: "ОСНОВНЫЕ НАСТРОЙКИ",
        language: "Язык приложения",
-       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English", qq: "Qaraqalpaqsha" },
+       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English", qq: "Qaraqalpaqsha", kk: "Қазақша" },
        languageModalTitle: "Выберите язык",
        currency: "Основная валюта",
        currencyOnly: "Поддерживается только валюта UZS",
@@ -234,7 +234,7 @@ export const translations = {
        appVersion: "App Version",
        mainSettings: "MAIN SETTINGS",
        language: "App Language",
-       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English", qq: "Qaraqalpaqsha" },
+       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English", qq: "Qaraqalpaqsha", kk: "Қазақша" },
        languageModalTitle: "Select Language",
        currency: "Main Currency",
        currencyOnly: "Only UZS currency is supported",
@@ -317,7 +317,7 @@ export const translations = {
        appVersion: "Qosımsha versiyası",
        mainSettings: "TIYKARǴI SAZLAWLAR",
        language: "Qosımsha tili",
-       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English", qq: "Qaraqalpaqsha" },
+       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English", qq: "Qaraqalpaqsha", kk: "Қазақша" },
        languageModalTitle: "Tildi tańlań",
        currency: "Tiykarǵı valyuta",
        currencyOnly: "Tek ǵana UZS valyutası qollap-quwatlanadı",
@@ -334,6 +334,90 @@ export const translations = {
        downloadGoals: "Maqsetlerdi júklew",
        exit: "Shıǵıw / Jabıw"
     }
+,
+  kk: {
+    greeting: {
+       morning: "Қайырлы таң",
+       day: "Қайырлы күн",
+       evening: "Қайырлы кеш",
+       night: "Қайырлы түн",
+       welcome: "Қош келдіңіз"
+    },
+    nav: {
+       home: "Басты",
+       stats: "Статистика",
+       profile: "Профиль"
+    },
+    header: {
+       totalSaved: "Барлығы жиналды",
+       stats: "Статистика",
+       profile: "Профиль баптаулары",
+       user: "Қолданушы"
+    },
+    home: {
+       millionaire: "Миллионер!",
+       millionSaved: "1M+ {currency} жиналды",
+       streak: "Күн",
+       activeStreak: "Белсенді серия",
+       aiConsult: "Қаржы AI",
+       aiNoGoals: "Сізде әлі мақсаттар жоқ. Бірінші мақсатыңызды жасаңыз!",
+       aiStart: "Керемет бастама! Мақсат жасадыңыз, енді оған қаражат бөліңіз.",
+       aiMillion: "Сіз 1 миллион {currency} астам қаражат жинай алдыңыз! Керемет нәтиже! 🔥",
+       aiProgress: "Сіз жалпы {amount} {currency} жинадыңыз. Үнемдеуді жалғастырсаңыз, барлығына тез қол жеткізесіз.",
+       goals: "Мақсаттар",
+       add: "Қосу",
+       newCategory: "Жаңа категория",
+       name: "Атауы",
+       namePlaceholder: "Мысалы: Ноутбук",
+       amount: "Мақсат сомасы",
+       deadline: "Мерзімі (Міндетті емес)",
+       saving: "Сақталуда...",
+       save: "Сақтау",
+       cancel: "Болдырмау",
+       noGoalsTitle: "Мақсаттар әлі қосылмаған.",
+       noGoalsDesc: "Ақша жинау үшін категория жасаңыз және оны таңдаңыз",
+       deadlineEnd: "Мерзімі аяқталды",
+       daysLeft: "күн қалды",
+       deadlinePassed: "Мерзімі өтті",
+       perDay: "UZS / күн",
+       recentActivity: "Соңғы әрекеттер",
+       noActivity: "Әрекеттер жоқ.",
+       archived: "Мұрағатталған",
+       target: "Мақсат:"
+    },
+    stats: {
+       distribution: "Үлестіру",
+       noGoals: "Әзірге мақсаттар жоқ",
+       noFunds: "Мақсаттарға әлі қаражат бөлінбеген",
+       savings7days: "Соңғы 7 күндегі үнемдеу",
+       saved: "Жиналды",
+       funds: "Қаражат"
+    },
+    profile: {
+       settings: "Баптаулар",
+       namePlaceholder: "Атыңыз...",
+       hidden: "Жасырын",
+       appVersion: "Қосымша нұсқасы",
+       mainSettings: "НЕГІЗГІ БАПТАУЛАР",
+       language: "Қосымша тілі",
+       languageNames: { uz: "O'zbekcha", ru: "Русский", en: "English", qq: "Qaraqalpaqsha", kk: "Қазақша" },
+       languageModalTitle: "Тілді таңдаңыз",
+       currency: "Негізгі валюта",
+       currencyOnly: "Тек UZS валютасы қолдаулады",
+       notifications: "Хабарландырулар",
+       on: "Қосу",
+       off: "Өшіру",
+       darkMode: "Түнгі режим",
+       auto: "Авто",
+       securityGroup: "ҚАУІПСІЗДІК",
+       pinCode: "PIN-код орнату",
+       infoGroup: "АҚПАРАТ",
+       help: "Көмек және ережелер",
+       downloadTx: "Транзакцияларды жүктеп алу",
+       downloadGoals: "Мақсаттарды жүктеп алу",
+       exit: "Шығу / Жабу"
+    }
+  }
   }
 };
 
