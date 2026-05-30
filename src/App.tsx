@@ -6,8 +6,10 @@ import { useEffect, useState } from "react";
 import AnimatedNumber from "./components/AnimatedNumber";
 import { triggerHaptic } from "./utils/haptics";
 import { UserProfile, Goal, Transaction } from "./types";
-import { Loader2, AlertCircle, Home as HomeIcon, PieChart as PieChartIcon, User as UserIcon } from "lucide-react";
+import { Loader2, AlertCircle, Home as HomeIcon, PieChart as PieChartIcon, User as UserIcon, Clock as ClockIcon, Plus as PlusIcon } from "lucide-react";
 import Home from "./components/Home";
+import History from "./components/History";
+import AddGoal from "./components/AddGoal";
 import Stats from "./components/Stats";
 import Profile from "./components/Profile";
 import Onboarding from "./components/Onboarding";
@@ -36,7 +38,7 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loadingData, setLoadingData] = useState<boolean>(true);
   
-  const [activeTab, setActiveTab] = useState<"home" | "stats" | "profile">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "history" | "add" | "stats" | "profile">("home");
   
   const [isOnboarding, setIsOnboarding] = useState<boolean>(() => !localStorage.getItem('app_onboarded'));
   const [telegramUser, setTelegramUser] = useState<any>(null);
@@ -179,7 +181,7 @@ export default function App() {
 
           <div className="mt-2">
              <p className="text-slate-400 text-[11px] font-semibold uppercase tracking-wider mb-1 flex items-center gap-2">
-               {activeTab === "home" ? t("header.totalSaved") : activeTab === "stats" ? t("header.stats") : t("header.profile")}
+               {activeTab === "home" ? t("header.totalSaved") : activeTab === "history" ? t("nav.history") || "Tarix" : activeTab === "add" ? t("home.add") || "Yangi maqsad" : activeTab === "stats" ? t("header.stats") : t("header.profile")}
              </p>
              <motion.div 
                key="header-val"
@@ -215,6 +217,8 @@ export default function App() {
                transition={{ duration: 0.2 }}
              >
                {activeTab === "home" && <Home goals={goals} transactions={transactions} token={token} onRefresh={fetchData} totalSaved={totalSaved} />}
+               {activeTab === "history" && <History goals={goals} transactions={transactions} />}
+               {activeTab === "add" && <AddGoal token={token} onSuccess={() => { fetchData(); setActiveTab("home"); }} onCancel={() => setActiveTab("home")} />}
                {activeTab === "stats" && <Stats goals={goals} transactions={transactions} />}
                {activeTab === "profile" && <Profile profile={profile} token={token} onRefresh={fetchData} transactions={transactions} goals={goals} />}
              </motion.div>
@@ -225,6 +229,17 @@ export default function App() {
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border-t border-white/50 dark:border-slate-800/80 pb-safe pt-2 px-6 shadow-[0_-4px_20px_rgb(0,0,0,0.02)] transition-colors duration-300">
         <div className="flex justify-around items-center max-w-md mx-auto pb-4 pt-1">
            <NavItem icon={HomeIcon} label={t("nav.home")} isActive={activeTab === "home"} onClick={() => setActiveTab("home")} />
+           <NavItem icon={ClockIcon} label={t("nav.history") || "Tarix"} isActive={activeTab === "history"} onClick={() => setActiveTab("history")} />
+           
+           <div className="relative -top-5">
+             <button
+               onClick={() => { triggerHaptic('light'); setActiveTab("add"); }}
+               className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 transition-transform active:scale-90 ${activeTab === "add" ? "bg-indigo-600 scale-105" : "bg-indigo-500 hover:bg-indigo-600"}`}
+             >
+               <PlusIcon className={`w-7 h-7 transition-transform ${activeTab === 'add' ? 'rotate-45' : ''}`} strokeWidth={2.5} />
+             </button>
+           </div>
+
            <NavItem icon={PieChartIcon} label={t("nav.stats")} isActive={activeTab === "stats"} onClick={() => setActiveTab("stats")} />
            <NavItem icon={UserIcon} label={t("nav.profile")} isActive={activeTab === "profile"} onClick={() => setActiveTab("profile")} />
         </div>
