@@ -24,6 +24,10 @@ export default function AnimatedNumber({ value, formatFunc = (v) => v.toFixed(0)
   }, [motionValue, value, inView]);
 
   useEffect(() => {
+    if (ref.current) {
+      ref.current.textContent = formatFunc(springValue.get());
+    }
+
     return springValue.on("change", (latest) => {
       if (ref.current) {
         ref.current.textContent = formatFunc(latest);
