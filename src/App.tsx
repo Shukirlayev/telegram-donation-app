@@ -101,8 +101,17 @@ export default function App() {
       const p = data.profile || null;
       setProfile(p);
       
-      if (p?.preferredCurrency && p.preferredCurrency !== currency) {
-        syncCurrencySilent(p.preferredCurrency);
+      if (p) {
+        if (p.preferredCurrency && p.preferredCurrency !== currency) {
+          syncCurrencySilent(p.preferredCurrency);
+        } else if (!p.preferredCurrency && currency !== 'UZS') {
+          // Frontend has a custom currency in localStorage, but backend is missing it! Sync to backend.
+          fetch("/api/user/profile", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ preferredCurrency: currency })
+          }).catch(console.error);
+        }
       }
     } catch(err: any) {
       setError(err.message || "Xatolik yuz berdi");

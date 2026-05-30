@@ -218,10 +218,10 @@ if (BOT_TOKEN) {
     const goalsSnap = await db.collection('goals').where('userId', '==', userId).get();
     let allUserGoals = goalsSnap.docs.map(d => d.data() as Goal);
     
-    const userGoals = allUserGoals.filter(g => !g.isCompleted && g.currentAmount < g.targetAmount && !g.isArchived);
+    const userGoals = allUserGoals.filter(g => !g.isCompleted && !g.isArchived);
 
     if (userGoals.length === 0) {
-      return ctx.reply("Sizda hali ochiq (tugallanmagan) maqsadlar yo'q! 🎯\nIltimos, avval Mini App orqali yangi maqsad (kategoriya) qo'shing.");
+      return ctx.reply(`Sizda hali ochiq (tugallanmagan) maqsadlar yo'q! 🎯\nIltimos, avval Mini App orqali yangi maqsad (kategoriya) qo'shing.\n(Topilgan barcha maqsadlar: ${allUserGoals.length})`);
     }
 
     const userProfileDoc = await db.collection('users').doc(String(userId)).get();
@@ -229,11 +229,10 @@ if (BOT_TOKEN) {
     const currency = userProfile?.preferredCurrency || "UZS";
     const rate = currency === 'UZS' ? 1 : currency === 'USD' ? 12500 : currency === 'EUR' ? 13500 : currency === 'RUB' ? 140 : 1;
 
-    // Try very strict match for quick entry (only digits)
     if (/^\d+$/.test(text)) {
       const amount = parseInt(text, 10);
       const buttons = userGoals.map(g => [Markup.button.callback(g.title, `add_${amount}_${g.id}`)]);
-      return ctx.reply(`💳 ${amount.toLocaleString()} ${currency} yozildi.\nQaysi maqsad (kategoriya) uchun qo'shamiz?`, Markup.inlineKeyboard(buttons));
+      return ctx.reply(`💳 ${amount.toLocaleString()} ${currency} kiritildi.\nQaysi maqsad (kategoriya) uchun qo'shamiz?`, Markup.inlineKeyboard(buttons));
     }
 
     const amountMatch = text.match(/\d+/);
