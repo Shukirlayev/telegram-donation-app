@@ -8,7 +8,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { downloadCSV } from "../utils/export";
 import Portal from "./Portal";
-import { useTranslation } from "../i18n";
+import { useTranslation, translations } from "../i18n";
 import { useAppContext } from "../contexts/AppContext";
 import { triggerHaptic } from "../utils/haptics";
 
