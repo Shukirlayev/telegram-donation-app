@@ -114,31 +114,6 @@ export default function App() {
 
   useEffect(() => {
     fetchData();
-    
-    // Refresh data when app comes to foreground or regains focus
-    const handleFocus = () => {
-      if (token) fetchData();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        handleFocus();
-      }
-    });
-
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.onEvent('viewportChanged', (e: any) => {
-        if (e.isStateStable) {
-          handleFocus();
-        }
-      });
-    }
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
-    };
   }, [token]);
 
   if (isOnboarding) {
